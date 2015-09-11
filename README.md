@@ -1,4 +1,4 @@
-PackerPE
+Remote Stealth DLL Injector
 ========
 
 C++ DLL Injector. Might bypass smth ( 2 years old codes :D ), injected code might use c++ exceptions ;)
