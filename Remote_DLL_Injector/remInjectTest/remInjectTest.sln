@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2012 for Windows Desktop
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "remInjectTest", "remInjectTest.vcxproj", "{E82DDC22-3730-4558-83FD-2749508FF7FD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleDll", "..\SampleDll\SampleDll\SampleDll.vcxproj", "{1D128749-4408-4B30-9C22-A86758B83DD9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TargetApp", "..\TargetApp\TargetApp.vcxproj", "{81F46032-FB2D-4912-8143-8DE8409114C1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E82DDC22-3730-4558-83FD-2749508FF7FD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E82DDC22-3730-4558-83FD-2749508FF7FD}.Debug|Win32.Build.0 = Debug|Win32
+		{E82DDC22-3730-4558-83FD-2749508FF7FD}.Release|Win32.ActiveCfg = Release|Win32
+		{E82DDC22-3730-4558-83FD-2749508FF7FD}.Release|Win32.Build.0 = Release|Win32
+		{1D128749-4408-4B30-9C22-A86758B83DD9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1D128749-4408-4B30-9C22-A86758B83DD9}.Debug|Win32.Build.0 = Debug|Win32
+		{1D128749-4408-4B30-9C22-A86758B83DD9}.Release|Win32.ActiveCfg = Release|Win32
+		{1D128749-4408-4B30-9C22-A86758B83DD9}.Release|Win32.Build.0 = Release|Win32
+		{81F46032-FB2D-4912-8143-8DE8409114C1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{81F46032-FB2D-4912-8143-8DE8409114C1}.Debug|Win32.Build.0 = Debug|Win32
+		{81F46032-FB2D-4912-8143-8DE8409114C1}.Release|Win32.ActiveCfg = Release|Win32
+		{81F46032-FB2D-4912-8143-8DE8409114C1}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
