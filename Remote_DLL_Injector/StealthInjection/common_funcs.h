@@ -25,40 +25,40 @@ int getProcessID(string processName, bool caseSensitive)
   PROCESSENTRY32 pe32;
 
   if(!caseSensitive)
-	  to_lowercase(&processName);
+    to_lowercase(&processName);
 
   hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
   if(hProcessSnap == INVALID_HANDLE_VALUE)
   {
-	  return FALSE;
+    return FALSE;
   }
   else
-  {	
-	  pe32.dwSize = sizeof(PROCESSENTRY32);
+  {  
+    pe32.dwSize = sizeof(PROCESSENTRY32);
 
-	  if(Process32First(hProcessSnap, &pe32) == NULL)
-	  {
-		  CloseHandle(hProcessSnap);
-		  return FALSE;
-	  }
-	  else
-	  {
-		  do
-		  {
-			  string exeName = pe32.szExeFile;
+    if(Process32First(hProcessSnap, &pe32) == NULL)
+    {
+      CloseHandle(hProcessSnap);
+      return FALSE;
+    }
+    else
+    {
+      do
+      {
+        string exeName = pe32.szExeFile;
 
-			  if(!caseSensitive)
-				  to_lowercase(&exeName);
+        if(!caseSensitive)
+          to_lowercase(&exeName);
 
-			  if(processName == exeName)
-			  {
-				  CloseHandle(hProcessSnap);
-				  return pe32.th32ProcessID;	//** Return Process ID	
-			  }
+        if(processName == exeName)
+        {
+          CloseHandle(hProcessSnap);
+          return pe32.th32ProcessID;  //** Return Process ID  
+        }
 
-		  } while(Process32Next(hProcessSnap, &pe32));
-	  }
+      } while(Process32Next(hProcessSnap, &pe32));
+    }
   }
 
   CloseHandle(hProcessSnap);
@@ -73,32 +73,32 @@ int getModuleHandleEx(int processID, string name, bool caseSensitive)
 {
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, processID);
   if(snapshot == INVALID_HANDLE_VALUE)
-	  return NULL;
+    return NULL;
 
   if(!caseSensitive)
-	  to_lowercase(&name);
+    to_lowercase(&name);
 
   MODULEENTRY32 mod;
   mod.dwSize = sizeof(MODULEENTRY32);
 
   if(Module32First(snapshot, &mod))
   {
-	  string moduleName = mod.szModule;
-	  if(!caseSensitive)
-		  to_lowercase(&moduleName);
+    string moduleName = mod.szModule;
+    if(!caseSensitive)
+      to_lowercase(&moduleName);
 
-	  if(moduleName == name)
-		  return (int)mod.modBaseAddr;
+    if(moduleName == name)
+      return (int)mod.modBaseAddr;
 
-	  while(Module32Next(snapshot, &mod))
-	  {
-		  moduleName = mod.szModule;
-		  if(!caseSensitive)
-			  to_lowercase(&moduleName);
+    while(Module32Next(snapshot, &mod))
+    {
+      moduleName = mod.szModule;
+      if(!caseSensitive)
+        to_lowercase(&moduleName);
 
-		  if(moduleName == name)
-			  return (int)mod.modBaseAddr;
-	  }
+      if(moduleName == name)
+        return (int)mod.modBaseAddr;
+    }
   }
 
   /* Failed to find the module */
@@ -111,7 +111,7 @@ int getProcAddressEx(int processID, const char* moduleName, const char* funcName
   DWORD mod = (DWORD)LoadLibrary(moduleName);
   DWORD offsetInCurrentProcess = (DWORD)GetProcAddress((HMODULE)mod, funcName)-mod;
   if(int modInTarget = getModuleHandleEx(processID, moduleName, false))
-	  return modInTarget + offsetInCurrentProcess;
+    return modInTarget + offsetInCurrentProcess;
 
   // module not loaded
   return NULL;
@@ -147,7 +147,7 @@ void to_lowercase(std::string* s)
 {
   std::string temp = s->c_str();
   for (std::string::iterator i = temp.begin(); i != temp.end(); ++i)
-	  *i = tolower(*i);
+    *i = tolower(*i);
 
   *s = temp.c_str();
 }
