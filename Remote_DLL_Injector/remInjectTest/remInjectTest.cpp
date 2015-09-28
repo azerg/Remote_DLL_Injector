@@ -1,14 +1,15 @@
 // remInjectTest.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
 #include "StealthInject.h"
 #include <string>
 #include <iostream>
 #include <vector>
 #include <fstream>
 #include <iterator>
-
+#include "targetver.h"
+#include <stdio.h>
+#include <tchar.h>
 
 int _tmain(int argc, _TCHAR* argv[])
 {
