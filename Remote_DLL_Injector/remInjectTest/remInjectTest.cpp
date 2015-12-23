@@ -18,7 +18,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
   // read file contents
   size_t fileSize = 0;
-  std::ifstream testFile( dllToInject.c_str(), std::ios::binary);
+  std::ifstream testFile(dllToInject.c_str(), std::ios::binary);
   std::vector<char> fileContents;
   fileContents.reserve(fileSize);
   fileContents.assign(std::istreambuf_iterator<char>(testFile),
@@ -41,7 +41,7 @@ int _tmain(int argc, _TCHAR* argv[])
   in.randomMax = 1024*5;
   in.injectWithLocalDll = true;
   in.localDllPath = "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\Debug\\SampleDLL.dll";
-  SIError err = StealthInjector().inject(&in, &out);
+  SIError err = StealthInjector().Inject(&in, &out);
 
   std::cout << "SIError: " << err << std::endl;
   system("pause");

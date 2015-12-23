@@ -27,7 +27,7 @@ DWORD WINAPI stub_startDll(StubParams* params)
 
 #define HEADER_SIZE 0x1000
 
-SIError StealthInject::inject(StealthParamsIn* in, StealthParamsOut* out)
+SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 {
   int pid = getProcessID(in->process, false);
   if(!pid)
@@ -41,7 +41,7 @@ SIError StealthInject::inject(StealthParamsIn* in, StealthParamsOut* out)
   if(!peFile.isValidPEFile())
     return DI_InvalidFile;
 
-  if(!allocateDll(targetProcess, in, out, &peFile))
+  if(!AllocateDll(targetProcess, in, out, &peFile))
     return SI_FailedToAllocate;
 
   // copy stub
@@ -70,10 +70,10 @@ SIError StealthInject::inject(StealthParamsIn* in, StealthParamsOut* out)
     CONSOLE("Section " << i << ") " << sectionName << " :: VirtualAddress " << (DWORD*)section->VirtualAddress << ", SizeOfRawData " << (DWORD*)section->SizeOfRawData << ",  VirtualSize " << (DWORD*)section->Misc.VirtualSize);
   }
 
-  if(!resolveIAT(targetProcess, out))
+  if(!ResolveIAT(targetProcess, out))
     return SI_UnableToResolveIAT;
 
-  if(!resolveRelocs(out))
+  if(!ResolveRelocs(out))
     return SI_UnableToResolveRelocs;
 
   if(in->removePEHeader)
@@ -100,7 +100,7 @@ SIError StealthInject::inject(StealthParamsIn* in, StealthParamsOut* out)
   // create the stub thread, stub is located at allocationBase+randomHead, this is the start of StubParams, and the first
   // param is the stub itself!
   auto pRemoteAddr = out->allocationBase + out->randomHead;
-  if(!createThread(targetProcess, pRemoteAddr, out->allocationBase+out->randomHead))
+  if(!CreateThread(targetProcess, pRemoteAddr, out->allocationBase+out->randomHead))
     return SI_FailedToCreateThread;
 
   // we cant null the sub here because the thread might not have finished executing and hence this will crash the target process!
@@ -109,7 +109,7 @@ SIError StealthInject::inject(StealthParamsIn* in, StealthParamsOut* out)
   return SI_Success;
 }
 
-bool StealthInject::allocateDll(HANDLE process, StealthParamsIn* in, StealthParamsOut* out, PEFile* peFile)
+bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthParamsOut* out, PEFile* peFile)
 {
   out->randomHead = 0;
   if(in->randomHead){
@@ -126,6 +126,7 @@ bool StealthInject::allocateDll(HANDLE process, StealthParamsIn* in, StealthPara
   // prepare a local dll which we can write to the target process in one go, makes things easier
   SIZE_T imageSize = out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + out->randomTail;
   out->prepDllSize = imageSize;
+  out->allocationSize = imageSize;
   out->prepDllAlloc = new char[imageSize];
   out->prepDllBase = (LPVOID)(DWORD(out->prepDllAlloc) + out->randomHead + sizeof(StubParams));
   memset(out->prepDllAlloc, 0, imageSize);
@@ -152,22 +153,24 @@ bool StealthInject::allocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     static char dllName[256] = {0};
     strcpy(dllName, in->localDllPath);
     PathStripPath(dllName);
-    out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath);
+    out->dllBase = LoadLibrary_Ex(process, dllName, in->localDllPath);
+    out->allocationBase = out->dllBase;
 
     DWORD oldProt = NULL;
     VirtualProtectEx(process, (LPVOID)out->allocationBase, imageSize, PAGE_EXECUTE_READWRITE, &oldProt);
-    CONSOLE("Loaded " << in->localDllPath << " at " << (DWORD*)out->allocationBase);
+    CONSOLE("Allocated in target process cave at " << (DWORD*)out->allocationBase << " size is " << (DWORD*)out->allocationSize);
+    CONSOLE("Loaded " << in->localDllPath << " at " << (DWORD*)out->dllBase);
   }
   else
   {
-    out->allocationBase = (DWORD)VirtualAllocEx(process, NULL, imageSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    out->allocationBase = (DWORD)VirtualAllocEx(process, NULL, out->allocationSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
   }
 
   out->dllBase = out->allocationBase + out->randomHead + sizeof(StubParams);
-  return (out->allocationBase != 0);
+  return out->allocationBase != 0;
 }
 
-bool StealthInject::loadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR importDescriptor, StealthParamsOut* out)
+bool StealthInject::LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR importDescriptor, StealthParamsOut* out)
 {
   static std::map<string, bool> loadedDlls;
   loadedDlls.clear();
@@ -219,13 +222,13 @@ bool StealthInject::loadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR im
   return true;
 }
 
-bool StealthInject::resolveIAT(HANDLE process, StealthParamsOut* out)
+bool StealthInject::ResolveIAT(HANDLE process, StealthParamsOut* out)
 {
   PEFile peFileForPrepDll(out->prepDllBase);
   PIMAGE_IMPORT_DESCRIPTOR importDescriptor = peFileForPrepDll.getImportDescriptor();
 
   // load all required dlls into target process
-  if(!loadImportedDlls(process, peFileForPrepDll.getImportDescriptor(), out))
+  if(!LoadImportedDlls(process, peFileForPrepDll.getImportDescriptor(), out))
     return false;
 
   while(importDescriptor->Name)
@@ -265,7 +268,7 @@ bool StealthInject::resolveIAT(HANDLE process, StealthParamsOut* out)
   return true;
 }
 
-bool StealthInject::resolveRelocs(StealthParamsOut* out)
+bool StealthInject::ResolveRelocs(StealthParamsOut* out)
 {
   PEFile peFileForPrepDll(out->prepDllBase);
   if(peFileForPrepDll.getFileHead()->Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
@@ -328,7 +331,7 @@ typedef NTSTATUS ( WINAPI * _RtlCreateUserThread )
   __out    PCLIENT_ID            ClientID 
   );
 
-HANDLE StealthInject::createThread(HANDLE process, DWORD startRoutine, DWORD params)
+HANDLE StealthInject::CreateThread(HANDLE process, DWORD startRoutine, DWORD params)
 {
   HANDLE remoteThread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)startRoutine, (LPVOID)params, 0, NULL);
   if(!remoteThread)
@@ -352,7 +355,7 @@ DWORD StealthInject::LoadLibrary_Ex(HANDLE process, const char* moduleName, cons
     PVOID remoteAddr = VirtualAllocEx(process, NULL, strlen(modulePath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     WriteProcessMemory(process, remoteAddr, modulePath, strlen(modulePath), NULL);
     DWORD loadLibAddr = GetProcAddress_Ex(process, "kernel32.dll", "LoadLibraryA");
-    HANDLE thread = createThread(process, loadLibAddr, DWORD(remoteAddr));
+    HANDLE thread = CreateThread(process, loadLibAddr, DWORD(remoteAddr));
     WaitForSingleObject(thread, INFINITE);
     CloseHandle(thread);
     VirtualFreeEx(process, remoteAddr, 0, MEM_RELEASE);

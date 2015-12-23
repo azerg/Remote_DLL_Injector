@@ -24,6 +24,7 @@ struct StealthParamsOut {
   SIZE_T prepDllSize;
   LPVOID prepDllBase;
 
+  SIZE_T allocationSize;
   DWORD allocationBase;
   DWORD dllBase;
   DWORD dllEntryPoint;
@@ -78,17 +79,17 @@ private:
 class StealthInject
 {
 public:
-  SIError inject(StealthParamsIn* in, StealthParamsOut* out);
+  SIError Inject(StealthParamsIn* in, StealthParamsOut* out);
 
   DWORD LoadLibrary_Ex(HANDLE process, const char* moduleName, const char* modulePath);
   DWORD GetProcAddress_Ex(HANDLE process, const char* moduleName, const char* functionName);
 
 private:
-  bool allocateDll(HANDLE process, StealthParamsIn* in, StealthParamsOut* out, PEFile* peFile);
-  bool resolveIAT(HANDLE process, StealthParamsOut* out);
-  bool resolveRelocs(StealthParamsOut* out);
-  HANDLE createThread(HANDLE process, DWORD startRoutine, DWORD params);
-  bool loadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR importDescriptor, StealthParamsOut* out);
+  bool AllocateDll(HANDLE process, StealthParamsIn* in, StealthParamsOut* out, PEFile* peFile);
+  bool ResolveIAT(HANDLE process, StealthParamsOut* out);
+  bool ResolveRelocs(StealthParamsOut* out);
+  HANDLE CreateThread(HANDLE process, DWORD startRoutine, DWORD params);
+  bool LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR importDescriptor, StealthParamsOut* out);
 
 private:
   LPVOID preparatoryDll;
