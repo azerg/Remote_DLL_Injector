@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)
+
 set (BOOST_FOLDER ${BOOST_ROOT})
 
 ##################################################################################################################

@@ -14,14 +14,15 @@
 int _tmain(int argc, _TCHAR* argv[])
 {
   std::string strParams( "paramm1111" );
-  std::string dllToInject( "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\Debug\\SampleDll.dll" );
+  std::string dllToInject( "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\SampleDll.dll" );
 
   // read file contents
   size_t fileSize = 0;
   std::ifstream testFile(dllToInject.c_str(), std::ios::binary);
   std::vector<char> fileContents;
   fileContents.reserve(fileSize);
-  fileContents.assign(std::istreambuf_iterator<char>(testFile),
+  fileContents.assign(
+    std::istreambuf_iterator<char>(testFile),
     std::istreambuf_iterator<char>());
 
   // inject
@@ -40,7 +41,8 @@ int _tmain(int argc, _TCHAR* argv[])
   in.randomTail = false;
   in.randomMax = 1024*5;
   in.injectWithLocalDll = true;
-  in.localDllPath = "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\Debug\\SampleDLL.dll";
+  in.localDllPath = "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\dummyLocal.dll";
+
   SIError err = StealthInjector().Inject(&in, &out);
 
   std::cout << "SIError: " << err << std::endl;

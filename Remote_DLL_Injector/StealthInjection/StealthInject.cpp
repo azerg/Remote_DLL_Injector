@@ -153,13 +153,12 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     static char dllName[256] = {0};
     strcpy(dllName, in->localDllPath);
     PathStripPath(dllName);
-    out->dllBase = LoadLibrary_Ex(process, dllName, in->localDllPath);
-    out->allocationBase = out->dllBase;
+    out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath);
 
     DWORD oldProt = NULL;
     VirtualProtectEx(process, (LPVOID)out->allocationBase, imageSize, PAGE_EXECUTE_READWRITE, &oldProt);
     CONSOLE("Allocated in target process cave at " << (DWORD*)out->allocationBase << " size is " << (DWORD*)out->allocationSize);
-    CONSOLE("Loaded " << in->localDllPath << " at " << (DWORD*)out->dllBase);
+    CONSOLE("Loaded " << in->localDllPath << " at " << (DWORD*)out->allocationBase);
   }
   else
   {

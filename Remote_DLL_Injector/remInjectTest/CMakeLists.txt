@@ -21,5 +21,4 @@ set(StealthInjectionCpp
 source_group("Source Files\\StealthInjection" FILES ${InterfacesInc})
 #---------------------------------------------------------------------------------
 
-#add_definitions(-DUNICODE -D_UNICODE)
 add_executable(remInjectTest ${MainProjSrc} ${MainProjInc})
