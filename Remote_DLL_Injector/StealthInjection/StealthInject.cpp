@@ -16,7 +16,7 @@ struct StubParams {
 };
 
 #pragma optimize("", off)
-DWORD WINAPI stub_startDll(StubParams* params)
+DWORD WINAPI stub_startDll(StubParams* params) noexcept
 {
   _asm int 3
   params->entryPoint(params->dllBase, DLL_PROCESS_ATTACH, params->extraData);
@@ -26,6 +26,24 @@ DWORD WINAPI stub_startDll(StubParams* params)
 
 
 #define HEADER_SIZE 0x1000
+
+LPVOID GetStubCodePtr() noexcept
+{
+#ifndef _DEBUG // Release builds
+  return &stub_startDll;
+#endif
+
+  // get original stubCode ptr from Debug executable ( for testing only ofc :P )
+  // In Debug &stub_startDll points to jmp [stub_startDll] command instead of direct function body.
+  char debugJmp[5];
+  memcpy(debugJmp, &stub_startDll, sizeof(debugJmp));
+
+  uint16_t shortJumpOffset = 
+    *(uint16_t*)&debugJmp[1] // e9 val1 val2 00 00. We are looking for val2,val1 short offset
+    + 5; // sizeof jmp command
+
+  return (LPVOID)((uint32_t)&stub_startDll + shortJumpOffset);
+}
 
 SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 {
@@ -52,7 +70,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   stubData.dllBase = out->dllBase;
   stubData.entryPoint = (DllMain)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
-  memcpy(stubData.stub, (LPVOID)stub_startDll, sizeof(stubData.stub));
+  memcpy(stubData.stub, GetStubCodePtr(), sizeof(stubData.stub));
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData, sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too
