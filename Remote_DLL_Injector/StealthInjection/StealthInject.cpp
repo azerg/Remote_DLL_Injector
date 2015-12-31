@@ -7,24 +7,6 @@
 #include "RESOURCE_LocalEmptyDll.h"
 using namespace std;
 
-typedef BOOL (APIENTRY* DllMain) (DWORD hModule, DWORD ul_reason_for_call, LPVOID lpReserved);
-struct StubParams {
-  char stub[0x100];  // 0x100 is approximate size of the stub_startDll routine. NOTE: this MUST be the first parameter of StubParams!!
-  DWORD dllBase;
-  DllMain entryPoint;
-  char extraData[0x1000];
-};
-
-#pragma optimize("", off)
-DWORD WINAPI stub_startDll(StubParams* params) noexcept
-{
-  _asm int 3
-  params->entryPoint(params->dllBase, DLL_PROCESS_ATTACH, params->extraData);
-  return 0;
-}
-#pragma optimize("", on)
-
-
 #define HEADER_SIZE 0x1000
 
 LPVOID GetStubCodePtr() noexcept

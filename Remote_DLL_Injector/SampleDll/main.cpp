@@ -9,6 +9,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
   {
 
     //DisableThreadLibraryCalls(hModule);
+    __asm {int 3};
 
     FILE *stream;
     // create console
