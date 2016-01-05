@@ -1,30 +1,43 @@
 #include "StealthInject.h"
 #include "common_funcs.h"
+#include "stub_data.h"
+#include "pelib.h"
+#include "RESOURCE_LocalEmptyDll.h"
+
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <map>
 #include <tlhelp32.h>
 #include <Shlwapi.h>
-#include "pelib.h"
-#include "RESOURCE_LocalEmptyDll.h"
 using namespace std;
 
 #define HEADER_SIZE 0x1000
 
-LPVOID GetStubCodePtr() noexcept
+LPVOID GetStubCodePtr(const std::string& stubName) noexcept
 {
-#ifndef _DEBUG // Release builds
-  return &stub_startDll;
-#endif
+  // load loader data
+  static std::vector<uint8_t> loaderData;
 
-  // get original stubCode ptr from Debug executable ( for testing only ofc :P )
-  // In Debug &stub_startDll points to jmp [stub_startDll] command instead of direct function body.
-  char debugJmp[5];
-  memcpy(debugJmp, &stub_startDll, sizeof(debugJmp));
+  // todo(azerg): add ability to use alternative loader's storage path, instead of current dir
+  boost::filesystem::path loaderFullPath{boost::filesystem::current_path()};
+  loaderFullPath /= stubName;
 
-  uint16_t shortJumpOffset = 
-    *(uint16_t*)&debugJmp[1] // e9 val1 val2 00 00. We are looking for val2,val1 short offset
-    + 5; // sizeof jmp command
+  boost::filesystem::ifstream loaderFile;
+  loaderFile.open(loaderFullPath, std::ios::in || std::ifstream::binary);
 
-  return (LPVOID)((uint32_t)&stub_startDll + shortJumpOffset);
+  auto pbuf = loaderFile.rdbuf();
+  // get file size
+  size_t size = static_cast<size_t>(pbuf->pubseekoff(0, loaderFile.end, loaderFile.in));
+  pbuf->pubseekpos(0, loaderFile.in);
+
+  loaderData.reserve(size);
+
+  // get file data
+  pbuf->sgetn(reinterpret_cast<char*>(loaderData.data()), size);
+
+  loaderFile.close();
+
+  return reinterpret_cast<LPVOID>(loaderData.data());
 }
 
 SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
@@ -52,7 +65,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   stubData.dllBase = out->dllBase;
   stubData.entryPoint = (DllMain)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
-  memcpy(stubData.stub, GetStubCodePtr(), sizeof(stubData.stub));
+  memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData, sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too

@@ -1,7 +1,10 @@
 file(GLOB MainProjInc "*.h" "../StealthInjection/*.h")
 file(GLOB MainProjSrc "*.cpp" "../StealthInjection/*.cpp")
 
-include_directories("../StealthInjection/")
+find_package(Boost 1.36.0 REQUIRED filesystem system)
+
+# LOADER_INCLUDES_DIR stores stub_data.h
+include_directories("../StealthInjection/" ${LOADER_INCLUDES_DIR} ${BOOST_ROOT})
 
 #---------------------------------------------------------------------------------
 set(COMMONS_DIR ${CMAKE_HOME_DIRECTORY}/StealthInjection)
@@ -22,3 +25,4 @@ source_group("Source Files\\StealthInjection" FILES ${InterfacesInc})
 #---------------------------------------------------------------------------------
 
 add_executable(remInjectTest ${MainProjSrc} ${MainProjInc})
+target_link_libraries(remInjectTest ${Boost_LIBRARIES})

@@ -5,7 +5,6 @@
 
 DWORD WINAPI StubEP(StubParams* params)
 {
-  _asm int 3
   params->entryPoint(params->dllBase, DLL_PROCESS_ATTACH, params->extraData);
   return 0;
 }

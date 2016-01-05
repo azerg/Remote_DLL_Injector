@@ -1,4 +1,5 @@
-set(LOADER_X86_PROJECT_NAME "loader_x86" CACHE TYPE STRING)
+set (LOADER_X86_PROJECT_NAME "loader_x86" CACHE TYPE STRING)
+set (LOADER_INCLUDES_DIR ${CMAKE_CURRENT_LIST_DIR}/inc CACHE TYPE STRING)
 
 file(GLOB MainProjInc "inc/*.*")
 file(GLOB MainProjSrc "src/*.*")
@@ -32,7 +33,7 @@ if (NOT DEFINED ENV{APPVEYOR})
 	# When loader is built, launch stub2rsrc to build stub_xx.bin from compiled loader executable
 	add_custom_command(TARGET ${LOADER_X86_PROJECT_NAME}
 					   POST_BUILD
-					   COMMAND $<TARGET_FILE:stub2rsrc> ARGS "$<TARGET_FILE:loader_x86>" "$<TARGET_FILE_DIR:loader_x86>/stub_x86.bin"
+					   COMMAND $<TARGET_FILE:stub2rsrc> ARGS "$<TARGET_FILE:loader_x86>" "$<TARGET_FILE_DIR:loader_x86>/loader_x86.stub"
 					   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 					   COMMENT "Extracting raw loader code from compiled loader executable")
 endif()		   
