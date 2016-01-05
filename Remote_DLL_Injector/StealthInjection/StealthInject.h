@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <string>
 
 struct StealthParamsIn{
   char* process;
@@ -16,7 +17,7 @@ struct StealthParamsIn{
   SIZE_T randomMax;
 
   bool injectWithLocalDll;
-  const char* localDllPath;
+  std::string localDllPath;
 };
 
 struct StealthParamsOut {

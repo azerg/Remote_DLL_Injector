@@ -10,15 +10,19 @@
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 int _tmain(int argc, _TCHAR* argv[])
 {
   std::string strParams( "paramm1111" );
-  std::string dllToInject( "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\SampleDll.dll" );
+
+  boost::filesystem::path dllToInject{boost::filesystem::current_path()};
+  dllToInject /= "SampleDll.dll";
 
   // read file contents
   size_t fileSize = 0;
-  std::ifstream testFile(dllToInject.c_str(), std::ios::binary);
+  std::ifstream testFile(dllToInject.generic_string().c_str(), std::ios::binary);
   std::vector<char> fileContents;
   fileContents.reserve(fileSize);
   fileContents.assign(
@@ -41,7 +45,7 @@ int _tmain(int argc, _TCHAR* argv[])
   in.randomTail = false;
   in.randomMax = 1024*5;
   in.injectWithLocalDll = true;
-  in.localDllPath = "E:\\WORK\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\dummyLocal.dll";
+  in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
   SIError err = StealthInjector().Inject(&in, &out);
 

@@ -63,7 +63,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   memcpy(stubData.extraData, in->params, in->paramLength);
   stubData.extraData[in->paramLength] = 0;
   stubData.dllBase = out->dllBase;
-  stubData.entryPoint = (DllMain)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
+  stubData.entryPoint = (DllMainProc)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
   memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData, sizeof(StubParams));
@@ -157,16 +157,16 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     /*
     TODO: Need to fix this!
     */
-    writeFile(in->localDllPath, RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
+    writeFile(in->localDllPath.c_str(), RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
     CPELibrary peLib;
-    peLib.OpenFile(in->localDllPath);
+    peLib.OpenFile(in->localDllPath.c_str());
     peLib.AddNewSection(".obj", imageSize + (randomNumber()%imageSize));
-    peLib.SaveFile(in->localDllPath);
+    peLib.SaveFile(in->localDllPath.c_str());
 
     static char dllName[256] = {0};
-    strcpy(dllName, in->localDllPath);
+    strcpy(dllName, in->localDllPath.c_str());
     PathStripPath(dllName);
-    out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath);
+    out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath.c_str());
 
     DWORD oldProt = NULL;
     VirtualProtectEx(process, (LPVOID)out->allocationBase, imageSize, PAGE_EXECUTE_READWRITE, &oldProt);
