@@ -1,14 +1,13 @@
 #pragma once
 #include <Windows.h>
 #include <string>
+#include <vector>
+#include <cstdint>
 
 struct StealthParamsIn{
-  char* process;
-  LPVOID dll;
-  SIZE_T dllSize;
-
-  char* params;
-  SIZE_T paramLength;
+  std::string process;
+  std::vector<uint8_t> dllToInject;
+  std::vector<uint8_t> params;
 
   bool removePEHeader;
   bool removeExtraSections;

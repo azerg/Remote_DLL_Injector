@@ -9,8 +9,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
   {
 
     DisableThreadLibraryCalls(hModule);
-    //__asm {int 3};
 
+    MessageBox(0, "Hello from DLL", nullptr, 0);
+
+    //__asm {int 3};
+    /*
     FILE *stream;
     // create console
     if (!AttachConsole(ATTACH_PARENT_PROCESS))
@@ -19,7 +22,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     freopen_s(&stream, "CONOUT$", "w", stdout);
 
     CONSOLE("param: " << (char*)lpReserved);
-/*
+
     try
     {
       CONSOLE("atan");

@@ -50,7 +50,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   if(!targetProcess)
     return SI_CantOpenProcess;
 
-  PEFile peFile(in->dll);
+  PEFile peFile(in->dllToInject.data());
   if(!peFile.isValidPEFile())
     return DI_InvalidFile;
 
@@ -60,8 +60,8 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   // copy stub
   static StubParams stubData;
   memset(&stubData, 0, sizeof(StubParams));
-  memcpy(stubData.extraData, in->params, in->paramLength);
-  stubData.extraData[in->paramLength] = 0;
+  memcpy(stubData.extraData, in->params.data(), in->params.size());
+  stubData.extraData[in->params.size()] = 0;
   stubData.dllBase = out->dllBase;
   stubData.entryPoint = (DllMainProc)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
@@ -69,15 +69,15 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData, sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too
-  memcpy(out->prepDllBase, in->dll, HEADER_SIZE);
+  memcpy(out->prepDllBase, in->dllToInject.data(), HEADER_SIZE);
 
   // copy sections
-  char sectionName[10] = {0};
+  char sectionName[10]{};
   for(int i=0; i<peFile.getFileHead()->NumberOfSections; i++)
   {
     PIMAGE_SECTION_HEADER section = &(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i];
 
-    memcpy((PUCHAR)((DWORD)out->prepDllBase) + section->VirtualAddress, (PUCHAR)((DWORD)in->dll) + section->PointerToRawData, section->SizeOfRawData);
+    memcpy((PUCHAR)((DWORD)out->prepDllBase) + section->VirtualAddress, (PUCHAR)((DWORD)in->dllToInject.data()) + section->PointerToRawData, section->SizeOfRawData);
 
     sprintf(sectionName, "%.8s", (char*)section->Name);
     CONSOLE("Section " << i << ") " << sectionName << " :: VirtualAddress " << (DWORD*)section->VirtualAddress << ", SizeOfRawData " << (DWORD*)section->SizeOfRawData << ",  VirtualSize " << (DWORD*)section->Misc.VirtualSize);
@@ -163,7 +163,7 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     peLib.AddNewSection(".obj", imageSize + (randomNumber()%imageSize));
     peLib.SaveFile(in->localDllPath.c_str());
 
-    static char dllName[256] = {0};
+    static char dllName[256]{};
     strcpy(dllName, in->localDllPath.c_str());
     PathStripPath(dllName);
     out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath.c_str());
