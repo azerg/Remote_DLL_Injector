@@ -33,6 +33,7 @@
 #include <Windows.h>
 #include <winnt.h>
 #include <imagehlp.h>//#include <Dbghelp.h>
+#include <stdexcept>
 #include "pelib.h"
 
 //----------------------------------------------------------------
@@ -81,6 +82,12 @@ void CPELibrary::AlignmentSections()
       PEAlign(image_section_header[i]->SizeOfRawData,
       image_nt_headers->OptionalHeader.FileAlignment);
   }
+
+  if (i == 0)
+  {
+    throw std::runtime_error("Cant process executable without sections");
+  }
+
   image_nt_headers->OptionalHeader.SizeOfImage=image_section_header[i-1]->VirtualAddress+
     image_section_header[i-1]->Misc.VirtualSize;
   image_nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].VirtualAddress=0;

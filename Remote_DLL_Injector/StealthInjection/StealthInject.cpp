@@ -7,6 +7,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <map>
+#include <limits>
 #include <tlhelp32.h>
 #include <Shlwapi.h>
 using namespace std;
@@ -79,7 +80,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 
     memcpy((PUCHAR)((DWORD)out->prepDllBase) + section->VirtualAddress, (PUCHAR)((DWORD)in->dllToInject.data()) + section->PointerToRawData, section->SizeOfRawData);
 
-    sprintf(sectionName, "%.8s", (char*)section->Name);
+    sprintf_s(sectionName, sizeof(sectionName), "%.8s", (char*)section->Name);
     CONSOLE("Section " << i << ") " << sectionName << " :: VirtualAddress " << (DWORD*)section->VirtualAddress << ", SizeOfRawData " << (DWORD*)section->SizeOfRawData << ",  VirtualSize " << (DWORD*)section->Misc.VirtualSize);
   }
 
@@ -95,7 +96,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   if(in->removeExtraSections){
     for(int i=0; i<peFile.getFileHead()->NumberOfSections; i++)
     {
-      sprintf(sectionName, "%.8s", (char*)(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i].Name);
+      sprintf_s(sectionName, sizeof(sectionName), "%.8s", (char*)(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i].Name);
       if(!strcmp(sectionName, ".reloc")
         || !strcmp(sectionName, ".rsrc"))
       {
@@ -137,7 +138,7 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
   }
 
   // prepare a local dll which we can write to the target process in one go, makes things easier
-  SIZE_T imageSize = out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + out->randomTail;
+  auto imageSize = out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + out->randomTail;
   out->prepDllSize = imageSize;
   out->allocationSize = imageSize;
   out->prepDllAlloc = new char[imageSize];
@@ -164,7 +165,7 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     peLib.SaveFile(in->localDllPath.c_str());
 
     static char dllName[256]{};
-    strcpy(dllName, in->localDllPath.c_str());
+    strcpy_s(dllName, sizeof(dllName), in->localDllPath.c_str());
     PathStripPath(dllName);
     out->allocationBase = LoadLibrary_Ex(process, dllName, in->localDllPath.c_str());
 
@@ -365,6 +366,10 @@ DWORD StealthInject::LoadLibrary_Ex(HANDLE process, const char* moduleName, cons
   {
     // load the dll into target process
     PVOID remoteAddr = VirtualAllocEx(process, NULL, strlen(modulePath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    if (remoteAddr == NULL)
+    {
+      std::runtime_error("VirtualAlloc failed...");
+    }
     WriteProcessMemory(process, remoteAddr, modulePath, strlen(modulePath), NULL);
     DWORD loadLibAddr = GetProcAddress_Ex(process, "kernel32.dll", "LoadLibraryA");
     HANDLE thread = CreateThread(process, loadLibAddr, DWORD(remoteAddr));

@@ -108,8 +108,12 @@ int getModuleHandleEx(int processID, string name, bool caseSensitive)
 
 int getProcAddressEx(int processID, const char* moduleName, const char* funcName)
 {
-  DWORD mod = (DWORD)LoadLibrary(moduleName);
-  DWORD offsetInCurrentProcess = (DWORD)GetProcAddress((HMODULE)mod, funcName)-mod;
+  auto mod = LoadLibrary(moduleName);
+  if (!mod)
+  {
+    throw std::runtime_error("Error getting proc address");
+  }
+  DWORD offsetInCurrentProcess = (DWORD)GetProcAddress(mod, funcName)-(DWORD)mod;
   if(int modInTarget = getModuleHandleEx(processID, moduleName, false))
     return modInTarget + offsetInCurrentProcess;
 
