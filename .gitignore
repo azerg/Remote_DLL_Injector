@@ -75,3 +75,4 @@ $RECYCLE.BIN/
 *.lnk
 build
 bin
+Remote_DLL_Injector/InjectorUI/InjectorUI.aps

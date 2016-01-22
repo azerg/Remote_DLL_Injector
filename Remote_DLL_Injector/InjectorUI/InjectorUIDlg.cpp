@@ -11,7 +11,6 @@
 #define new DEBUG_NEW
 #endif
 
-
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialog
@@ -57,13 +56,17 @@ CInjectorUIDlg::CInjectorUIDlg(CWnd* pParent /*=NULL*/)
 
 void CInjectorUIDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+  CDialog::DoDataExchange(pDX);
+  DDX_Control(pDX, IDOK, m_btnAbout);
+  DDX_Control(pDX, IDCANCEL, m_btnExit);
 }
 
 BEGIN_MESSAGE_MAP(CInjectorUIDlg, CDialog)
-	ON_WM_SYSCOMMAND()
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
+  ON_WM_SYSCOMMAND()
+  ON_WM_PAINT()
+  ON_WM_QUERYDRAGICON()
+  ON_BN_CLICKED(IDOK, &CInjectorUIDlg::OnBnClickedAbout)
+  ON_WM_NCHITTEST()
 END_MESSAGE_MAP()
 
 
@@ -152,3 +155,13 @@ HCURSOR CInjectorUIDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CInjectorUIDlg::OnBnClickedAbout()
+{
+  CAboutDlg dlgAbout;
+  dlgAbout.DoModal();
+}
+
+LRESULT CInjectorUIDlg::OnNcHitTest(CPoint point)
+{
+  return HTCAPTION;
+}

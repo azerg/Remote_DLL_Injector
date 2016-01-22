@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 
 // CInjectorUIDlg dialog
@@ -31,4 +32,9 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+  CButton m_btnAbout;
+  CButton m_btnExit;
+  afx_msg void OnBnClickedAbout();
+  afx_msg LRESULT OnNcHitTest(CPoint point);
 };
