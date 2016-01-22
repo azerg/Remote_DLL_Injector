@@ -11,6 +11,8 @@
 #define new DEBUG_NEW
 #endif
 
+#define SETTINGS_FILENAME "settings.cfg"
+
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialog
@@ -46,10 +48,9 @@ END_MESSAGE_MAP()
 
 // CInjectorUIDlg dialog
 
-
-
 CInjectorUIDlg::CInjectorUIDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(IDD_INJECTORUI_DIALOG, pParent)
+	: CDialog(IDD_INJECTORUI_DIALOG, pParent),
+  m_settings(SETTINGS_FILENAME)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }

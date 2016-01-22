@@ -4,6 +4,7 @@
 
 #pragma once
 #include "afxwin.h"
+#include "Settings.h"
 
 
 // CInjectorUIDlg dialog
@@ -21,6 +22,8 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
+private:
+  SettingsMngr m_settings;
 
 // Implementation
 protected:
