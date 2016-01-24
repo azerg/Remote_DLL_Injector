@@ -1,7 +1,7 @@
 file(GLOB InjectorUIInc "*.h")
 file(GLOB InjectorUISrc "*.cpp")
 
-find_package(Boost 1.36.0)
+find_package(Boost 1.36.0 REQUIRED filesystem system)
 
 # 1: Use MFC in a Static Library
 # 2: For the shared MFC library

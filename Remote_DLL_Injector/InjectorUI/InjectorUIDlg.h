@@ -5,6 +5,7 @@
 #pragma once
 #include "afxwin.h"
 #include "Settings.h"
+#include "InjectionMngr.h"
 
 
 // CInjectorUIDlg dialog
@@ -23,11 +24,13 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 private:
-  SettingsMngr m_settings;
+  Settings GetSettingsFromControls() const;
+  void ApplySettings(const Settings& settings);
 
 // Implementation
 protected:
 	HICON m_hIcon;
+  InjectionMngr m_injectionManager;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -38,6 +41,13 @@ protected:
 public:
   CButton m_btnAbout;
   CButton m_btnExit;
+  CEdit m_editTargetProcess;
+  // Path to DLL that will be injected in  @target_process
+  CEdit m_sourceDLLPath;
   afx_msg void OnBnClickedAbout();
   afx_msg LRESULT OnNcHitTest(CPoint point);
+  afx_msg void OnBnClickedCancel();
+  afx_msg void OnBnClickedBtnDoInject();
+  CButton m_btnPickDLL;
+  afx_msg void OnBnClickedBtnPickDll();
 };
