@@ -94,11 +94,3 @@ private:
 private:
   LPVOID preparatoryDll;
 };
-
-inline StealthInject& StealthInjector()
-{
-  // This is Stub.bin converted to an array! (not stub.exe!)
-  //static reminjector::RemoteInjector inj(reinterpret_cast<char*>( &Stub[0] ), Stub_size);
-  static StealthInject inj;
-  return inj;
-}

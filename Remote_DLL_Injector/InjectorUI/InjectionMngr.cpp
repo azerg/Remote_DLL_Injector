@@ -31,6 +31,7 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
   in.injectWithLocalDll = false;
   in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
-  SIError err = StealthInjector().Inject(&in, &out);
+  StealthInject inj;
+  SIError err = inj.Inject(&in, &out);
   return err == SI_Success;
 }

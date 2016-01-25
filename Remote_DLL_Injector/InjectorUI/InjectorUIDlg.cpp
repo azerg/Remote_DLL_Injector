@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "InjectorUI.h"
 #include "InjectorUIDlg.h"
+#include "DlgSettings.h"
 #include "afxdialogex.h"
 
 #ifdef _DEBUG
@@ -49,7 +50,8 @@ END_MESSAGE_MAP()
 // CInjectorUIDlg dialog
 
 CInjectorUIDlg::CInjectorUIDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(IDD_INJECTORUI_DIALOG, pParent)
+	: CDialog(IDD_INJECTORUI_DIALOG, pParent),
+  m_uiInternalSettings{}
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -62,6 +64,7 @@ void CInjectorUIDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Control(pDX, IDC_EDIT_TARGET_PROCESS, m_editTargetProcess);
   DDX_Control(pDX, IDC_EDIT_DLL2INJECT, m_sourceDLLPath);
   DDX_Control(pDX, ID_BTN_PICK_DLL, m_btnPickDLL);
+  DDX_Control(pDX, IDC_BUTTON_SETTIGNS, m_btnSettings);
 }
 
 BEGIN_MESSAGE_MAP(CInjectorUIDlg, CDialog)
@@ -73,6 +76,7 @@ BEGIN_MESSAGE_MAP(CInjectorUIDlg, CDialog)
   ON_BN_CLICKED(IDCANCEL, &CInjectorUIDlg::OnBnClickedCancel)
   ON_BN_CLICKED(ID_BTN_DO_INJECT, &CInjectorUIDlg::OnBnClickedBtnDoInject)
   ON_BN_CLICKED(ID_BTN_PICK_DLL, &CInjectorUIDlg::OnBnClickedBtnPickDll)
+  ON_BN_CLICKED(IDC_BUTTON_SETTIGNS, &CInjectorUIDlg::OnBnClickedButtonSettigns)
 END_MESSAGE_MAP()
 
 
@@ -186,6 +190,18 @@ void CInjectorUIDlg::OnBnClickedCancel()
   CDialog::OnCancel();
 }
 
+std::string GetStringFromEdit(const CEdit& edit)
+{
+  std::string result;
+  CString mfcStr;
+  edit.GetWindowTextA(mfcStr);
+  if (!mfcStr.IsEmpty())
+  {
+    result = mfcStr.GetBuffer();
+  }
+  return result;
+}
+
 Settings CInjectorUIDlg::GetSettingsFromControls() const
 {
   Settings settings;
@@ -197,14 +213,20 @@ Settings CInjectorUIDlg::GetSettingsFromControls() const
   settings.topLeftX = curRect.left;
   settings.topLeftY = curRect.top;
 
-  CString sourceDLLPath;
-  m_sourceDLLPath.GetWindowTextA(sourceDLLPath);
-  if (!sourceDLLPath.IsEmpty())
-  {
-    settings.lastDLLPath = sourceDLLPath.GetBuffer();
-  }
+  settings.lastDLLPath = GetStringFromEdit(m_sourceDLLPath);
+  settings.lastTargetProcess = GetStringFromEdit(m_editTargetProcess);
+
+  settings.injOpts = m_uiInternalSettings.injOpts;
 
   return settings;
+}
+
+void SetEditTextString(CEdit& srcEdit, std::string string)
+{
+  if (!string.empty())
+  {
+    srcEdit.SetWindowTextA(string.c_str());
+  }
 }
 
 void CInjectorUIDlg::ApplySettings(const Settings& settings)
@@ -222,10 +244,10 @@ void CInjectorUIDlg::ApplySettings(const Settings& settings)
       0);
   }
 
-  if (!settings.lastDLLPath.empty())
-  {
-    m_sourceDLLPath.SetWindowTextA(settings.lastDLLPath.c_str());
-  }
+  SetEditTextString(m_sourceDLLPath, settings.lastDLLPath);
+  SetEditTextString(m_editTargetProcess, settings.lastTargetProcess);
+
+  m_uiInternalSettings.injOpts = settings.injOpts;
 }
 
 
@@ -234,8 +256,8 @@ void CInjectorUIDlg::OnBnClickedBtnDoInject()
   auto settings = GetSettingsFromControls();
 
   m_injectionManager.DoInject(
-    0,
-    "DllToInject",
+    settings.lastTargetProcess.c_str(),
+    settings.lastDLLPath.c_str(),
     {
       settings.injOpts.removeExtraSections,
       settings.injOpts.removePEHeader,
@@ -253,6 +275,13 @@ void CInjectorUIDlg::OnBnClickedBtnPickDll()
   OPENFILENAME ofn{};       // common dialog box structure
   char szFile[MAX_PATH]{};  // buffer for file name
 
+  LPCSTR lpstrInitialDir = nullptr;
+  auto sourceDLL = GetStringFromEdit(m_sourceDLLPath);
+  if (!sourceDLL.empty())
+  {
+    lpstrInitialDir = sourceDLL.c_str();
+  }
+
   // Initialize OPENFILENAME
   ofn.lStructSize = sizeof(OPENFILENAME);
   ofn.hwndOwner = m_hWnd;
@@ -262,7 +291,7 @@ void CInjectorUIDlg::OnBnClickedBtnPickDll()
   ofn.nFilterIndex = 2;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
-  ofn.lpstrInitialDir = NULL;
+  ofn.lpstrInitialDir = lpstrInitialDir;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   // Display the Open dialog box.
@@ -271,4 +300,10 @@ void CInjectorUIDlg::OnBnClickedBtnPickDll()
   {
     m_sourceDLLPath.SetWindowTextA(ofn.lpstrFile);
   }
+}
+
+void CInjectorUIDlg::OnBnClickedButtonSettigns()
+{
+  CDlgSettings dlgSettings(m_uiInternalSettings);
+  dlgSettings.DoModal();
 }

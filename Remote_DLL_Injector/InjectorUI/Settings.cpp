@@ -25,10 +25,13 @@ Settings SettingsMngr::Read()
     result.lastDLLPath = tree.get<std::string>("UI.lastDLLPath", "");
     result.lastTargetProcess = tree.get<std::string>("UI.lastTargetProcess", "");
 
-    BOOST_FOREACH(pt::ptree::value_type &v, tree.get_child("UI.RecentFiles"))
-    {
-      result.recentFiles.insert(v.second.data());
-    }
+    //BOOST_FOREACH(pt::ptree::value_type &v, tree.get_child("UI.RecentFiles"))
+    //{
+    //  result.recentFiles.insert(v.second.data());
+    //}
+
+    //---------------------------------------------
+    // Injection Options
 
     result.injOpts.randomHead = tree.get("InjectionOpts.randomHead", false);
     result.injOpts.randomTail = tree.get("InjectionOpts.randomTail", false);
@@ -36,9 +39,6 @@ Settings SettingsMngr::Read()
     result.injOpts.removePEHeader = tree.get("InjectionOpts.removePEHeader", false);
     result.injOpts.injectWithLocalDll = tree.get("InjectionOpts.injectWithLocalDll", false);
     result.injOpts.randomMax = tree.get("InjectionOpts.randomMax", 1024 * 4);
-
-    //---------------------------------------------
-    // Injection Options
   }
   catch (const boost::exception&)
   {} // noting to do here. We just cant find error log. (or not? :D)
@@ -59,10 +59,10 @@ void SettingsMngr::Save(Settings settings)
   tree.put("UI.lastDLLPath", settings.lastDLLPath);
   tree.put("UI.lastTargetProcess", settings.lastTargetProcess);
 
-  BOOST_FOREACH(const std::string &name, settings.recentFiles)
-  {
-    tree.add("UI.RecentFiles", name);
-  }
+  //BOOST_FOREACH(const std::string &name, settings.recentFiles)
+  //{
+  //  tree.add("UI.RecentFiles", name);
+  //}
 
   //---------------------------------------------
   // Injection Options

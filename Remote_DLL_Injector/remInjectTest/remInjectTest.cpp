@@ -43,7 +43,8 @@ int _tmain(int argc, _TCHAR* argv[])
   in.injectWithLocalDll = true;
   in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
-  SIError err = StealthInjector().Inject(&in, &out);
+  StealthInject inj;
+  SIError err = inj.Inject(&in, &out);
 
   std::cout << "SIError: " << err << std::endl;
   system("pause");

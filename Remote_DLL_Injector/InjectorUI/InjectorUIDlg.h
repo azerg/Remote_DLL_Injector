@@ -31,6 +31,7 @@ private:
 protected:
 	HICON m_hIcon;
   InjectionMngr m_injectionManager;
+  UIInternalSettings m_uiInternalSettings;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -49,5 +50,7 @@ public:
   afx_msg void OnBnClickedCancel();
   afx_msg void OnBnClickedBtnDoInject();
   CButton m_btnPickDLL;
+  CButton m_btnSettings;
   afx_msg void OnBnClickedBtnPickDll();
+  afx_msg void OnBnClickedButtonSettigns();
 };

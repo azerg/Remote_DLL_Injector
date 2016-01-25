@@ -13,11 +13,21 @@ struct InjectionOptions
   uint32_t randomMax; // = 1024 * 5;
 };
 
+// Options used to share between "Settings" dlg & main window
+struct UIInternalSettings
+{
+  UIInternalSettings() = default;
+  UIInternalSettings(UIInternalSettings&&) = default;
+
+  InjectionOptions injOpts;
+};
+
 struct Settings
 {
   Settings():
     topLeftX{},
-    topLeftY{}
+    topLeftY{},
+    injOpts{}
   {}
   Settings(Settings&&) = default;
   int topLeftX;
