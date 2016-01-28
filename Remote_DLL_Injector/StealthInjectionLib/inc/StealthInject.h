@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <iostream>
 
 struct StealthParamsIn{
   std::string process;
@@ -76,9 +77,34 @@ private:
   LPVOID pefile_dll;
 };
 
+// redirecting logs out of this obj if needed
+class ConRedirect
+{
+public:
+  ConRedirect(std::ostream& srcStream, std::ostream& destStream) :
+    srcStream_(srcStream),
+    oldBuff_(srcStream.rdbuf(destStream.rdbuf()))
+  {}
+
+  ~ConRedirect()
+  {
+    srcStream_.rdbuf(oldBuff_);
+  }
+
+private:
+  ConRedirect(const ConRedirect&) = delete;
+
+  std::ostream& srcStream_;
+  std::streambuf* oldBuff_;
+};
+
 class StealthInject
 {
 public:
+  // redirectedStream - allows us to redirect injector messages to any stream instead of console
+  StealthInject(std::ostream& redirectedStream = std::cout):
+    conRecirect_(std::cout, redirectedStream)
+  {}
   SIError Inject(StealthParamsIn* in, StealthParamsOut* out);
 
   DWORD LoadLibrary_Ex(HANDLE process, const char* moduleName, const char* modulePath);
@@ -92,5 +118,6 @@ private:
   bool LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR importDescriptor, StealthParamsOut* out);
 
 private:
+  ConRedirect conRecirect_;
   LPVOID preparatoryDll;
 };
