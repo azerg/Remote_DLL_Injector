@@ -50,9 +50,9 @@ CmdOptions ParseCmd(int argc, _TCHAR* argv[])
   {
     std::cout << desc << "\n" << "Sample params str:\n" <<
       "--target_process_name=\"TargetApp.exe\" "
-      "--source_dll_path=\"D:\\Work\\other\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\SampleDll.dll\" "
+      "--source_dll_path=\"D:\\Work\\Remote_DLL_Injector\\bin\\Debug\\SampleDll.dll\" "
       "--with_local_dll=yes "
-      "--local_dll_path=\"D:\\Work\\other\\Remote_DLL_Injector\\Remote_DLL_Injector\\bin\\Debug\\dummy_local.dll\"";
+      "--local_dll_path=\"D:\\Work\\Remote_DLL_Injector\\bin\\Debug\\dummy_local.dll\"";
     return CmdOptions{};
   }
 

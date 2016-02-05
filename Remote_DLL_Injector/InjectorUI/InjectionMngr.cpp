@@ -28,7 +28,7 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
   in.randomHead = options.randomHead;
   in.randomTail = options.randomTail;
   in.randomMax = options.randomMax;
-  in.injectWithLocalDll = false;
+  in.injectWithLocalDll = options.injectWithLocalDll;
   in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
   StealthInject inj;

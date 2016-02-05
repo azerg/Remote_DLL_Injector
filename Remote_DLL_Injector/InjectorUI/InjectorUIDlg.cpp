@@ -65,6 +65,7 @@ void CInjectorUIDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Control(pDX, IDC_EDIT_DLL2INJECT, m_sourceDLLPath);
   DDX_Control(pDX, ID_BTN_PICK_DLL, m_btnPickDLL);
   DDX_Control(pDX, IDC_BUTTON_SETTIGNS, m_btnSettings);
+  DDX_Control(pDX, IDC_EDIT_STATUS_LOGS, m_edtStatusLogs);
 }
 
 BEGIN_MESSAGE_MAP(CInjectorUIDlg, CDialog)

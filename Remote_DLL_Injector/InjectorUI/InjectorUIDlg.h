@@ -53,4 +53,5 @@ public:
   CButton m_btnSettings;
   afx_msg void OnBnClickedBtnPickDll();
   afx_msg void OnBnClickedButtonSettigns();
+  CEdit m_edtStatusLogs;
 };

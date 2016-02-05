@@ -1,7 +1,7 @@
 file(GLOB MainProjInc "*.h")
 file(GLOB MainProjSrc "*.cpp")
 
-find_package(Boost 1.36.0 REQUIRED filesystem system)
+find_package(Boost 1.36.0 REQUIRED program_options filesystem system)
 
 # LOADER_INCLUDES_DIR stores stub_data.h
 include_directories("${CMAKE_HOME_DIRECTORY}/StealthInjectionLib/inc/" ${LOADER_INCLUDES_DIR} ${BOOST_ROOT})
