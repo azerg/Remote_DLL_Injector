@@ -12,7 +12,7 @@
 IMPLEMENT_DYNAMIC(CDlgSettings, CDialogEx)
 
 CDlgSettings::CDlgSettings(UIInternalSettings& uiInternalSettings, CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_DLG_SETTINGS, pParent),
+  : CDialogEx(IDD_DLG_SETTINGS, pParent),
   m_uiInternalSettings(uiInternalSettings)
 {
 

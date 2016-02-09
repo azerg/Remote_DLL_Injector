@@ -15,6 +15,37 @@ std::vector<uint8_t> ReadFileContents(std::string filePath)
   return fileContents;
 }
 
+class InjectionMngr::LogBuff : public std::streambuf
+{
+public:
+  LogBuff(CListBox& lbLogOutput):
+    lbLogOutput_(lbLogOutput)
+  {
+    setp(0, 0);
+  }
+
+  virtual int_type overflow(int_type c = traits_type::eof())
+  {
+    strMsg_ += c;
+    return c;
+  }
+
+  virtual int sync() noexcept
+  {
+    lbLogOutput_.AddString(strMsg_.c_str());
+    strMsg_.clear();
+    return 0; // hardcoded success
+  }
+
+private:
+  std::string strMsg_;
+  CListBox& lbLogOutput_;
+};
+
+InjectionMngr::InjectionMngr(CListBox& lbLogOutput):
+  logBuff_{std::make_unique<LogBuff>(lbLogOutput)}
+{}
+
 bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
 {
   static StealthParamsIn in{};
@@ -31,7 +62,7 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
   in.injectWithLocalDll = options.injectWithLocalDll;
   in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
-  StealthInject inj;
+  StealthInject inj(logBuff_.get());
   SIError err = inj.Inject(&in, &out);
   return err == SI_Success;
 }

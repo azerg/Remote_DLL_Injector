@@ -5,10 +5,10 @@
 #pragma once
 
 #ifndef __AFXWIN_H__
-	#error "include 'stdafx.h' before including this file for PCH"
+  #error "include 'stdafx.h' before including this file for PCH"
 #endif
 
-#include "resource.h"		// main symbols
+#include "resource.h"    // main symbols
 
 
 // CInjectorUIApp:
@@ -18,15 +18,15 @@
 class CInjectorUIApp : public CWinApp
 {
 public:
-	CInjectorUIApp();
+  CInjectorUIApp();
 
 // Overrides
 public:
-	virtual BOOL InitInstance();
+  virtual BOOL InitInstance();
 
 // Implementation
 
-	DECLARE_MESSAGE_MAP()
+  DECLARE_MESSAGE_MAP()
 };
 
 extern CInjectorUIApp theApp;

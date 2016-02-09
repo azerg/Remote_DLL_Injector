@@ -6,6 +6,7 @@
 #include "afxwin.h"
 #include "Settings.h"
 #include "InjectionMngr.h"
+#include <memory>
 
 
 // CInjectorUIDlg dialog
@@ -13,15 +14,15 @@ class CInjectorUIDlg : public CDialog
 {
 // Construction
 public:
-	CInjectorUIDlg(CWnd* pParent = NULL);	// standard constructor
+  CInjectorUIDlg(CWnd* pParent = NULL);  // standard constructor
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_INJECTORUI_DIALOG };
+  enum { IDD = IDD_INJECTORUI_DIALOG };
 #endif
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+  protected:
+  virtual void DoDataExchange(CDataExchange* pDX);  // DDX/DDV support
 
 private:
   Settings GetSettingsFromControls() const;
@@ -29,16 +30,16 @@ private:
 
 // Implementation
 protected:
-	HICON m_hIcon;
-  InjectionMngr m_injectionManager;
+  HICON m_hIcon;
+  std::unique_ptr<InjectionMngr> m_injectionManager;
   UIInternalSettings m_uiInternalSettings;
 
-	// Generated message map functions
-	virtual BOOL OnInitDialog();
-	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	afx_msg void OnPaint();
-	afx_msg HCURSOR OnQueryDragIcon();
-	DECLARE_MESSAGE_MAP()
+  // Generated message map functions
+  virtual BOOL OnInitDialog();
+  afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+  afx_msg void OnPaint();
+  afx_msg HCURSOR OnQueryDragIcon();
+  DECLARE_MESSAGE_MAP()
 public:
   CButton m_btnAbout;
   CButton m_btnExit;
@@ -54,4 +55,5 @@ public:
   afx_msg void OnBnClickedBtnPickDll();
   afx_msg void OnBnClickedButtonSettigns();
   CEdit m_edtStatusLogs;
+  CListBox m_lbLogOutput;
 };

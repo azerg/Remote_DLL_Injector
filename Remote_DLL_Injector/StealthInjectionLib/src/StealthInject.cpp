@@ -43,6 +43,8 @@ LPVOID GetStubCodePtr(const std::string& stubName) noexcept
 
 SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 {
+  CONSOLE("Started injecting: " << in->localDllPath);
+
   int pid = getProcessID(in->process, false);
   if(!pid)
     return SI_ProcessNotFound;
