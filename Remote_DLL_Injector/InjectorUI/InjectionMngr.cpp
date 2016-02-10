@@ -80,11 +80,5 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
   StealthInject inj(logBuff_.get());
   SIError err = inj.Inject(&in, &out);
 
-  // delete temp local dll file
-  if (in.injectWithLocalDll)
-  {
-    boost::filesystem::remove(in.localDllPath);
-  }
-
   return err == SI_Success;
 }

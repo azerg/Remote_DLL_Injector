@@ -33,6 +33,9 @@ int CHListBox::AddString(LPCTSTR s)
   if (result < 0)
     return result;
   updateWidth(s);
+
+  CListBox::SetCaretIndex(result);
+
   return result;
 }
 
