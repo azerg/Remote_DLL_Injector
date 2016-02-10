@@ -46,19 +46,31 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   CONSOLE("Started injecting: " << in->localDllPath);
 
   int pid = getProcessID(in->process, false);
-  if(!pid)
+  if (!pid)
+  {
+    CONSOLE("Error: ProcessNotFound (" << in->process << ")");
     return SI_ProcessNotFound;
+  }
 
   HANDLE targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-  if(!targetProcess)
+  if (!targetProcess)
+  {
+    CONSOLE("Error: CantOpenProcess");
     return SI_CantOpenProcess;
+  }
 
   PEFile peFile(in->dllToInject.data());
-  if(!peFile.isValidPEFile())
+  if (!peFile.isValidPEFile())
+  {
+    CONSOLE("Error: InvalidPEFile");
     return DI_InvalidFile;
+  }
 
-  if(!AllocateDll(targetProcess, in, out, &peFile))
+  if (!AllocateDll(targetProcess, in, out, &peFile))
+  {
+    CONSOLE("Error: FailedToAllocate dll in target process");
     return SI_FailedToAllocate;
+  }
 
   // copy stub
   static StubParams stubData;
@@ -86,11 +98,17 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
     CONSOLE("Section " << i << ") " << sectionName << " :: VirtualAddress " << (DWORD*)section->VirtualAddress << ", SizeOfRawData " << (DWORD*)section->SizeOfRawData << ",  VirtualSize " << (DWORD*)section->Misc.VirtualSize);
   }
 
-  if(!ResolveIAT(targetProcess, out))
+  if (!ResolveIAT(targetProcess, out))
+  {
+    CONSOLE("Error: UnableToResolveIAT");
     return SI_UnableToResolveIAT;
+  }
 
-  if(!ResolveRelocs(out))
+  if (!ResolveRelocs(out))
+  {
+    CONSOLE("Error: UnableToResolveRelocs");
     return SI_UnableToResolveRelocs;
+  }
 
   if(in->removePEHeader)
     memset(out->prepDllBase, 0, HEADER_SIZE);
@@ -110,18 +128,25 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   }
 
   // write the fully prepared dll into target process
-  if(!WriteProcessMemory(targetProcess, (LPVOID)out->allocationBase, out->prepDllAlloc, out->prepDllSize, NULL))
+  if (!WriteProcessMemory(targetProcess, (LPVOID)out->allocationBase, out->prepDllAlloc, out->prepDllSize, NULL))
+  {
+    CONSOLE("Error: FailedToWriteDll in target process");
     return SI_FailedToWriteDll;
+  }
 
   // create the stub thread, stub is located at allocationBase+randomHead, this is the start of StubParams, and the first
   // param is the stub itself!
   auto pRemoteAddr = out->allocationBase + out->randomHead;
-  if(!CreateThread(targetProcess, pRemoteAddr, out->allocationBase+out->randomHead))
+  if (!CreateThread(targetProcess, pRemoteAddr, out->allocationBase + out->randomHead))
+  {
+    CONSOLE("Error: FailedToCreateThread in target process");
     return SI_FailedToCreateThread;
+  }
 
   // we cant null the sub here because the thread might not have finished executing and hence this will crash the target process!
   //WriteProcessMemory(targetProcess, (LPVOID)(out->allocationBase+out->randomHead), out->prepDllAlloc, sizeof(stubData.stub), NULL);
 
+  CONSOLE("Success");
   return SI_Success;
 }
 
