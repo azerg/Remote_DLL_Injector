@@ -63,22 +63,32 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
 {
   lbLogOutput_.ResetContent();
 
-  static StealthParamsIn in{};
-  static StealthParamsOut out{};
-  in.dllToInject = ReadFileContents(dllToInjectPath);
-  in.process = targetProcessName;
-  // unussed yet. todo(azerg): add to options
-  //in.params = {1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1}; // sample params arr :D
-  in.removeExtraSections = options.removeExtraSections;
-  in.removePEHeader = options.removePEHeader;
-  in.randomHead = options.randomHead;
-  in.randomTail = options.randomTail;
-  in.randomMax = options.randomMax;
-  in.injectWithLocalDll = options.injectWithLocalDll;
-  in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
+  try
+  {
+    static StealthParamsIn in{};
+    static StealthParamsOut out{};
+    in.dllToInject = ReadFileContents(dllToInjectPath);
+    in.process = targetProcessName;
+    // unussed yet. todo(azerg): add to options
+    //in.params = {1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1}; // sample params arr :D
+    in.removeExtraSections = options.removeExtraSections;
+    in.removePEHeader = options.removePEHeader;
+    in.randomHead = options.randomHead;
+    in.randomTail = options.randomTail;
+    in.randomMax = options.randomMax;
+    in.injectWithLocalDll = options.injectWithLocalDll;
+    in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
-  StealthInject inj(logBuff_.get());
-  SIError err = inj.Inject(&in, &out);
+    StealthInject inj(logBuff_.get());
+    SIError err = inj.Inject(&in, &out);
 
-  return err == SI_Success;
+    return err == SI_Success;
+  }
+  catch (const std::exception& ex)
+  {
+    lbLogOutput_.AddString("Exception:");
+    lbLogOutput_.AddString(ex.what());
+  }
+
+  return false;
 }

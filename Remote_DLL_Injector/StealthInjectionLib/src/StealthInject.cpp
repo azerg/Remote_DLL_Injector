@@ -88,7 +88,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 
   // copy sections
   char sectionName[10]{};
-  for(int i=0; i<peFile.getFileHead()->NumberOfSections; i++)
+  for (int i = 0; i < peFile.getFileHead()->NumberOfSections; i++)
   {
     PIMAGE_SECTION_HEADER section = &(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i];
 
@@ -110,15 +110,16 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
     return SI_UnableToResolveRelocs;
   }
 
-  if(in->removePEHeader)
+  if (in->removePEHeader)
     memset(out->prepDllBase, 0, HEADER_SIZE);
 
-  if(in->removeExtraSections){
-    for(int i=0; i<peFile.getFileHead()->NumberOfSections; i++)
+  if (in->removeExtraSections)
+  {
+    for (int i = 0; i < peFile.getFileHead()->NumberOfSections; i++)
     {
       sprintf_s(sectionName, sizeof(sectionName), "%.8s", (char*)(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i].Name);
-      if(!strcmp(sectionName, ".reloc")
-        || !strcmp(sectionName, ".rsrc"))
+      if (!strcmp(sectionName, ".reloc")
+          || !strcmp(sectionName, ".rsrc"))
       {
         CONSOLE("Nulling section: " << sectionName);
         PIMAGE_SECTION_HEADER section = &(IMAGE_FIRST_SECTION(peFile.getNtHeaders32()))[i];
@@ -153,13 +154,15 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthParamsOut* out, PEFile* peFile)
 {
   out->randomHead = 0;
-  if(in->randomHead){
+  if (in->randomHead)
+  {
     out->randomHead = randomNumber() % in->randomMax;
     out->randomHead += (out->randomHead % sizeof(int));  // round up to a number divisible by 4 for alignments sake
   }
 
   out->randomTail = 0;
-  if(in->randomTail){
+  if (in->randomTail)
+  {
     out->randomTail = randomNumber() % in->randomMax;
     out->randomTail += (out->randomTail % sizeof(int));  // round up to a number divisible by 4 for alignments sake
   }
@@ -173,14 +176,14 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
   memset(out->prepDllAlloc, 0, imageSize);
 
   // randomize head
-  for(UINT i = 0; i < out->randomHead; i++)
-        ((PUCHAR)out->prepDllAlloc)[i] = randomNumber() % 255;
+  for (UINT i = 0; i < out->randomHead; i++)
+    ((PUCHAR)out->prepDllAlloc)[i] = randomNumber() % 255;
 
   // randomize tail
-  for(UINT i = 0; i < out->randomTail; i++)
-        ((PUCHAR)out->prepDllAlloc)[out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + i] = randomNumber() % 255;
+  for (UINT i = 0; i < out->randomTail; i++)
+    ((PUCHAR)out->prepDllAlloc)[out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + i] = randomNumber() % 255;
 
-  if(in->injectWithLocalDll)
+  if (in->injectWithLocalDll)
   {
     /*
     TODO: Need to fix this!
@@ -188,7 +191,7 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     writeFile(in->localDllPath.c_str(), RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
     CPELibrary peLib;
     peLib.OpenFile(in->localDllPath.c_str());
-    peLib.AddNewSection(".obj", imageSize + (randomNumber()%imageSize));
+    peLib.AddNewSection(".obj", imageSize + (randomNumber() % imageSize));
     peLib.SaveFile(in->localDllPath.c_str());
 
     static char dllName[256]{};
@@ -215,45 +218,49 @@ bool StealthInject::LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR im
   static std::map<string, bool> loadedDlls;
   loadedDlls.clear();
   static string moduleName;
-  while(importDescriptor->Name){
+  while (importDescriptor->Name)
+  {
     moduleName = (char*)((DWORD)(out->prepDllBase) + importDescriptor->Name);
     CONSOLE("Name: " << moduleName);
     to_lowercase(&moduleName);
-        loadedDlls[moduleName] = false;
+    loadedDlls[moduleName] = false;
     importDescriptor++;
   }
 
   SetLastError(0);
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetProcessId(process));
   CONSOLE("CreateToolhelp32Snapshot: " << GetLastError());
-  if(snapshot == INVALID_HANDLE_VALUE)
+  if (snapshot == INVALID_HANDLE_VALUE)
     return false;
 
   MODULEENTRY32 mod;
   mod.dwSize = sizeof(MODULEENTRY32);
-  if(Module32First(snapshot, &mod))
+  if (Module32First(snapshot, &mod))
   {
     moduleName = mod.szModule;
     to_lowercase(&moduleName);
 
-    if(loadedDlls.find(moduleName) != loadedDlls.end())
+    if (loadedDlls.find(moduleName) != loadedDlls.end())
       loadedDlls[moduleName] = true;
 
-    while(Module32Next(snapshot, &mod))
+    while (Module32Next(snapshot, &mod))
     {
       moduleName = mod.szModule;
       to_lowercase(&moduleName);
 
-      if(loadedDlls.find(moduleName) != loadedDlls.end())
+      if (loadedDlls.find(moduleName) != loadedDlls.end())
         loadedDlls[moduleName] = true;
     }
   }
 
-  for(auto it = loadedDlls.begin(); it != loadedDlls.end(); ++it){
-    if(!it->second){
-      CONSOLE("Loading " << it->first << " into target process...");
-      if(!LoadLibrary_Ex(process, it->first.c_str(), it->first.c_str())){
-        CONSOLE("Failed to load: " << it->first);
+  for (auto& it : loadedDlls)
+  {
+    if (!it.second)
+    {
+      CONSOLE("Loading " << it.first << " into target process...");
+      if (!LoadLibrary_Ex(process, it.first.c_str(), it.first.c_str()))
+      {
+        CONSOLE("Failed to load: " << it.first);
         return false;
       }
     }
@@ -268,23 +275,23 @@ bool StealthInject::ResolveIAT(HANDLE process, StealthParamsOut* out)
   PIMAGE_IMPORT_DESCRIPTOR importDescriptor = peFileForPrepDll.getImportDescriptor();
 
   // load all required dlls into target process
-  if(!LoadImportedDlls(process, peFileForPrepDll.getImportDescriptor(), out))
+  if (!LoadImportedDlls(process, peFileForPrepDll.getImportDescriptor(), out))
     return false;
 
-  while(importDescriptor->Name)
+  while (importDescriptor->Name)
   {
     char* moduleName = (char*)((DWORD)(out->prepDllBase) + importDescriptor->Name);
     PDWORD firstThunk = (PDWORD)((DWORD)(out->prepDllBase) + importDescriptor->FirstThunk);
     PIMAGE_THUNK_DATA thunksChain = (PIMAGE_THUNK_DATA)((DWORD)(out->prepDllBase) + importDescriptor->OriginalFirstThunk);
 
-    if(!importDescriptor->OriginalFirstThunk)
+    if (!importDescriptor->OriginalFirstThunk)
       thunksChain = (PIMAGE_THUNK_DATA)(firstThunk);
 
     // load all imported apis from definite dll
-    while(thunksChain->u1.AddressOfData)
+    while (thunksChain->u1.AddressOfData)
     {
       // by ordinal
-      if(thunksChain->u1.AddressOfData & IMAGE_ORDINAL_FLAG32)
+      if (thunksChain->u1.AddressOfData & IMAGE_ORDINAL_FLAG32)
       {
         LoadLibrary(moduleName);
         DWORD ordinalNumber = IMAGE_ORDINAL32(thunksChain->u1.Ordinal);
@@ -311,26 +318,26 @@ bool StealthInject::ResolveIAT(HANDLE process, StealthParamsOut* out)
 bool StealthInject::ResolveRelocs(StealthParamsOut* out)
 {
   PEFile peFileForPrepDll(out->prepDllBase);
-  if(peFileForPrepDll.getFileHead()->Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+  if (peFileForPrepDll.getFileHead()->Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
     return false;
 
-    PIMAGE_DATA_DIRECTORY relocsDir = &peFileForPrepDll.getOptionalHead32()->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
-    if(!relocsDir->Size)
+  PIMAGE_DATA_DIRECTORY relocsDir = &peFileForPrepDll.getOptionalHead32()->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
+  if (!relocsDir->Size)
     return true;
 
   DWORD baseDelta = out->dllBase - peFileForPrepDll.getNtHeaders32()->OptionalHeader.ImageBase;
   // r: current position inside base relocation data.
   PIMAGE_BASE_RELOCATION r = (IMAGE_BASE_RELOCATION*)((DWORD)out->prepDllBase + relocsDir->VirtualAddress);
   // reloc: We should not start another block if (r >= reloc)
-  PIMAGE_BASE_RELOCATION reloc = (IMAGE_BASE_RELOCATION*)((DWORD)r + relocsDir->Size - sizeof (IMAGE_BASE_RELOCATION));
+  PIMAGE_BASE_RELOCATION reloc = (IMAGE_BASE_RELOCATION*)((DWORD)r + relocsDir->Size - sizeof(IMAGE_BASE_RELOCATION));
 
-  for (; r<reloc; r=(IMAGE_BASE_RELOCATION*)((DWORD)r + r->SizeOfBlock))
+  for (; r < reloc; r = (IMAGE_BASE_RELOCATION*)((DWORD)r + r->SizeOfBlock))
   {
     WORD *relocItem = (WORD*)(r + 1);
 
-    for (DWORD i = 0, totalItems = (r->SizeOfBlock - sizeof (IMAGE_BASE_RELOCATION)) >> 1; 
-    i < totalItems; 
-    i++, relocItem++)
+    for (DWORD i = 0, totalItems = (r->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) >> 1;
+    i < totalItems;
+      i++, relocItem++)
     {
       switch (*relocItem >> 12)
       {
@@ -350,15 +357,15 @@ bool StealthInject::ResolveRelocs(StealthParamsOut* out)
   return true;
 }
 
-typedef struct _CLIENT_ID 
+typedef struct _CLIENT_ID
 {
   HANDLE UniqueProcess;
   HANDLE UniqueThread;
 } CLIENT_ID, *PCLIENT_ID;
 
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
-typedef NTSTATUS ( WINAPI * _RtlCreateUserThread )
-  (
+typedef NTSTATUS(WINAPI * _RtlCreateUserThread)
+(
   __in     HANDLE                ProcessHandle,
   __in     PSECURITY_DESCRIPTOR  SecurityDescriptor OPTIONAL,
   __in     BOOLEAN               CreateSuspended,
@@ -368,19 +375,19 @@ typedef NTSTATUS ( WINAPI * _RtlCreateUserThread )
   __in     PVOID                 StartAddress,
   __in     PVOID                 StartParameter OPTIONAL,
   __out    PHANDLE               ThreadHandle,
-  __out    PCLIENT_ID            ClientID 
+  __out    PCLIENT_ID            ClientID
   );
 
 HANDLE StealthInject::CreateThread(HANDLE process, DWORD startRoutine, DWORD params)
 {
   HANDLE remoteThread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)startRoutine, (LPVOID)params, 0, NULL);
-  if(!remoteThread)
+  if (!remoteThread)
   {
-    _RtlCreateUserThread RtlCreateUserThread = (_RtlCreateUserThread)GetProcAddress ( GetModuleHandleW ( L"ntdll" ), "RtlCreateUserThread" );
-    if(RtlCreateUserThread)
+    _RtlCreateUserThread RtlCreateUserThread = (_RtlCreateUserThread)GetProcAddress(GetModuleHandleW(L"ntdll"), "RtlCreateUserThread");
+    if (RtlCreateUserThread)
     {
       CLIENT_ID ClientId;
-      if(!NT_SUCCESS(RtlCreateUserThread(process, NULL, FALSE, 0, 0, 0, (PVOID)startRoutine, NULL, &remoteThread, &ClientId )))
+      if (!NT_SUCCESS(RtlCreateUserThread(process, NULL, FALSE, 0, 0, 0, (PVOID)startRoutine, NULL, &remoteThread, &ClientId)))
         return NULL;
     }
   }
@@ -389,7 +396,7 @@ HANDLE StealthInject::CreateThread(HANDLE process, DWORD startRoutine, DWORD par
 
 DWORD StealthInject::LoadLibrary_Ex(HANDLE process, const char* moduleName, const char* modulePath)
 {
-  if(!getModuleHandleEx(GetProcessId(process), moduleName, false))
+  if (!getModuleHandleEx(GetProcessId(process), moduleName, false))
   {
     // load the dll into target process
     PVOID remoteAddr = VirtualAllocEx(process, NULL, strlen(modulePath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -415,11 +422,11 @@ DWORD StealthInject::GetProcAddress_Ex(HANDLE process, const char* moduleName, c
 bool PEFile::isValidPEFile()
 {
   PIMAGE_DOS_HEADER DOSHead = (PIMAGE_DOS_HEADER)pefile_dll;
-  if(DOSHead->e_magic != IMAGE_DOS_SIGNATURE)
+  if (DOSHead->e_magic != IMAGE_DOS_SIGNATURE)
     return false;
 
   PIMAGE_OPTIONAL_HEADER32 OptHead32 = getOptionalHead32();
-  if(OptHead32->Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+  if (OptHead32->Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
     return false;
 
   return true;
