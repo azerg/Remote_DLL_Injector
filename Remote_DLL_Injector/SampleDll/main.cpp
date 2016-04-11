@@ -3,6 +3,7 @@
 using namespace std;
 
 #define CONSOLE(x) cout << x << endl;
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
   if (ul_reason_for_call == DLL_PROCESS_ATTACH)
@@ -13,7 +14,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     MessageBox(0, "Hello from DLL", nullptr, 0);
 
     //__asm {int 3};
-    /*
     FILE *stream;
     // create console
     if (!AttachConsole(ATTACH_PARENT_PROCESS))
@@ -21,23 +21,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     SetConsoleTitle("Sample Dll");
     freopen_s(&stream, "CONOUT$", "w", stdout);
 
-    CONSOLE("param: " << (char*)lpReserved);
+    //CONSOLE("param: " << (char*)lpReserved);
 
     try
     {
-      CONSOLE("atan");
-      float atan_res = atan(0.566f);
-      CONSOLE("atan_res: " << atan_res);
-
-      CONSOLE("Doing exception...");
-      int* ptr = NULL;
-      *ptr = 25;
-      CONSOLE("Done!");
+      CONSOLE("Throwing runtime error...");
+      throw std::runtime_error("eek");
     }
-    catch (...)
+    catch (const std::exception& ex)
     {
-      CONSOLE("Exception caught!");
-    }*/
+      MessageBox(0, "Catched", nullptr, 0);
+      CONSOLE("Catched! Exception msg: " << ex.what());
+    }
   }
   return TRUE;
 }

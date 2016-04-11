@@ -1,15 +1,17 @@
 #pragma once
 
+#include "Settings.h"
+
 #include <cstdint>
 #include <vector>
 #include <memory>
-#include "Settings.h"
+#include <boost/optional.hpp>
 
 class InjectionMngr
 {
 public:
   InjectionMngr(CListBox& lbLogOutput);
-  bool DoInject(const char* targetProcessName, const char* dllToInjectPath, InjectionOptions options) const;
+  boost::optional<int64_t> DoInject(const char* targetProcessName, const char* dllToInjectPath, InjectionOptions options) const;
 
 private:
   InjectionMngr(const InjectionMngr&) = delete;

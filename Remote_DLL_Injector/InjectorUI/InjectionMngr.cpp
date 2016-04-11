@@ -46,13 +46,13 @@ InjectionMngr::InjectionMngr(CListBox& lbLogOutput):
   logBuff_{std::make_unique<LogBuff>(lbLogOutput)}
 {}
 
-bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
+boost::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
 {
   static StealthParamsIn in{};
   static StealthParamsOut out{};
   in.dllToInject = ReadFileContents(dllToInjectPath);
   in.process = targetProcessName;
-  // unussed yet. todo(azerg): add to options
+  // unused yet. todo(azerg): add to options
   //in.params = {1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1}; // sample params arr :D
   in.removeExtraSections = options.removeExtraSections;
   in.removePEHeader = options.removePEHeader;
@@ -64,5 +64,6 @@ bool InjectionMngr::DoInject(const char* targetProcessName, const char * dllToIn
 
   StealthInject inj(logBuff_.get());
   SIError err = inj.Inject(&in, &out);
-  return err == SI_Success;
+
+  return err == SI_Success ? boost::optional<int64_t>() : static_cast<uint64_t>(err);
 }

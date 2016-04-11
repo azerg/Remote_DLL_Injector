@@ -7,6 +7,7 @@
 #include "InjectorUIDlg.h"
 #include "DlgSettings.h"
 #include "afxdialogex.h"
+#include <boost/format.hpp>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -173,8 +174,9 @@ HCURSOR CInjectorUIDlg::OnQueryDragIcon()
 
 void CInjectorUIDlg::OnBnClickedAbout()
 {
-  CAboutDlg dlgAbout;
-  dlgAbout.DoModal();
+  //CAboutDlg dlgAbout;
+  //dlgAbout.DoModal();
+  LoadLibrary("SampleDll.dll"); // todo(azerg): remove this for test only!!
 }
 
 LRESULT CInjectorUIDlg::OnNcHitTest(CPoint point)
@@ -257,7 +259,7 @@ void CInjectorUIDlg::OnBnClickedBtnDoInject()
 {
   auto settings = GetSettingsFromControls();
 
-  m_injectionManager->DoInject(
+  auto reslt = m_injectionManager->DoInject(
     settings.lastTargetProcess.c_str(),
     settings.lastDLLPath.c_str(),
     {
@@ -269,6 +271,16 @@ void CInjectorUIDlg::OnBnClickedBtnDoInject()
       settings.injOpts.randomMax
     }
   );
+
+  if (!reslt)
+  {
+    m_lbLogOutput.AddString("Success.");
+  }
+  else
+  {
+    auto msg = boost::str(boost::format("Error! Code: %1%") % reslt.get());
+    m_lbLogOutput.AddString(msg.c_str());
+  }
 }
 
 

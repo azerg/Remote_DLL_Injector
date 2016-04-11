@@ -54,7 +54,8 @@ int getProcessID(string processName, bool caseSensitive)
         if(processName == exeName)
         {
           CloseHandle(hProcessSnap);
-          return pe32.th32ProcessID;  //** Return Process ID  
+          return pe32.th32ProcessID;  //** Return Process ID
+          //std::cout << "process found: " << std::hex << pe32.th32ProcessID;
         }
 
       } while(Process32Next(hProcessSnap, &pe32));
