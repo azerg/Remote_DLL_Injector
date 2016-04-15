@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "InjectionMngr.h"
 #include "StealthInject.h"
+#include <Windows.h>
 #include <vector>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -18,7 +19,7 @@ std::vector<uint8_t> ReadFileContents(std::string filePath)
 class InjectionMngr::LogBuff : public std::streambuf
 {
 public:
-  LogBuff(CListBox& lbLogOutput):
+  LogBuff(CHListBox& lbLogOutput):
     lbLogOutput_(lbLogOutput)
   {
     setp(0, 0);
@@ -32,22 +33,38 @@ public:
 
   virtual int sync() noexcept
   {
-    lbLogOutput_.AddString(strMsg_.c_str());
-    strMsg_.clear();
+    PrintMsgToListBox();
     return 0; // hardcoded success
   }
 
 private:
+  void PrintMsgToListBox() noexcept
+  {
+    auto ext = strMsg_.length();
+    if (lbLogOutput_.GetHorizontalExtent() < ext)
+    {
+      //lbLogOutput_.SetHorizontalExtent(ext);
+    }
+
+    lbLogOutput_.AddString(strMsg_.c_str());
+    strMsg_.clear();
+  }
+
   std::string strMsg_;
-  CListBox& lbLogOutput_;
+  CHListBox& lbLogOutput_;
 };
 
-InjectionMngr::InjectionMngr(CListBox& lbLogOutput):
-  logBuff_{std::make_unique<LogBuff>(lbLogOutput)}
+InjectionMngr::InjectionMngr(CHListBox& lbLogOutput):
+  logBuff_{std::make_unique<LogBuff>(lbLogOutput)},
+  lbLogOutput_(lbLogOutput)
 {}
 
 boost::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
 {
+  lbLogOutput_.ResetContent();
+
+  try
+  {
   static StealthParamsIn in{};
   static StealthParamsOut out{};
   in.dllToInject = ReadFileContents(dllToInjectPath);
@@ -66,4 +83,12 @@ boost::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, 
   SIError err = inj.Inject(&in, &out);
 
   return err == SI_Success ? boost::optional<int64_t>() : static_cast<uint64_t>(err);
+}
+  catch (const std::exception& ex)
+  {
+    lbLogOutput_.AddString("Exception:");
+    lbLogOutput_.AddString(ex.what());
+  }
+
+  return false;
 }

@@ -6,8 +6,8 @@
 #include "afxwin.h"
 #include "Settings.h"
 #include "InjectionMngr.h"
+#include "HListBox.h"
 #include <memory>
-
 
 // CInjectorUIDlg dialog
 class CInjectorUIDlg : public CDialog
@@ -55,5 +55,5 @@ public:
   afx_msg void OnBnClickedBtnPickDll();
   afx_msg void OnBnClickedButtonSettigns();
   CEdit m_edtStatusLogs;
-  CListBox m_lbLogOutput;
+  CHListBox m_lbLogOutput;
 };

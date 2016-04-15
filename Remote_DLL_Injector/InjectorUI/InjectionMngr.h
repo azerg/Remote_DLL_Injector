@@ -5,12 +5,13 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
-#include <boost/optional.hpp>
+#include "HListBox.h"
+#include "Settings.h"
 
 class InjectionMngr
 {
 public:
-  InjectionMngr(CListBox& lbLogOutput);
+  InjectionMngr(CHListBox& lbLogOutput);
   boost::optional<int64_t> DoInject(const char* targetProcessName, const char* dllToInjectPath, InjectionOptions options) const;
 
 private:
@@ -19,5 +20,6 @@ private:
 
   class LogBuff;
   std::shared_ptr<LogBuff> logBuff_;
+  CHListBox& lbLogOutput_;
 };
 
