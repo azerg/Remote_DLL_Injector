@@ -7,6 +7,7 @@
 #include <memory>
 #include "HListBox.h"
 #include "Settings.h"
+#include <boost/optional.hpp>
 
 class InjectionMngr
 {

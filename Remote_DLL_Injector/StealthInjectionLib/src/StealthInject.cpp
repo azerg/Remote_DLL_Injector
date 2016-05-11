@@ -6,6 +6,7 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/optional.hpp>
 #include <map>
 #include <limits>
 #include <tlhelp32.h>
@@ -41,11 +42,29 @@ LPVOID GetStubCodePtr(const std::string& stubName) noexcept
   return reinterpret_cast<LPVOID>(loaderData.data());
 }
 
+boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut* out, int targetPID, PEFile& dllToInjectFile)
+{
+  StubParams stubData{};
+  assert(in->params.size() <= sizeof(stubData.extraData));
+
+  memcpy(stubData.extraData, in->params.data(), in->params.size());
+  stubData.extraData[in->params.size()] = 0;
+  stubData.dllBase = out->dllBase;
+  stubData.entryPoint = (DllMainProc)((ULONG_PTR)out->dllBase + dllToInjectFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
+  out->dllEntryPoint = (DWORD)stubData.entryPoint;
+  memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
+
+  stubData.pGetModuleHandle = cmn::getModuleHandleEx(targetPID, "GetModuleHandle");
+  stubData.pGetProcAddress = cmn::getModuleHandleEx(targetPID, "GetProcAddress");
+
+  return boost::none;
+}
+
 SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 {
   CONSOLE("Started injecting: " << in->localDllPath);
 
-  int pid = getProcessID(in->process, false);
+  int pid = cmn::getProcessID(in->process, false);
   if (!pid)
   {
     CONSOLE("Error: ProcessNotFound (" << in->process << ")");
@@ -73,15 +92,8 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   }
 
   // copy stub
-  static StubParams stubData;
-  memset(&stubData, 0, sizeof(StubParams));
-  memcpy(stubData.extraData, in->params.data(), in->params.size());
-  stubData.extraData[in->params.size()] = 0;
-  stubData.dllBase = out->dllBase;
-  stubData.entryPoint = (DllMainProc)((ULONG_PTR)out->dllBase + peFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
-  out->dllEntryPoint = (DWORD)stubData.entryPoint;
-  memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
-  memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData, sizeof(StubParams));
+  const auto& stubData = FillStubParams(in, out, pid, peFile);
+  memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), stubData.get_ptr(), sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too
   memcpy(out->prepDllBase, in->dllToInject.data(), HEADER_SIZE);
@@ -147,7 +159,6 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   // we cant null the sub here because the thread might not have finished executing and hence this will crash the target process!
   //WriteProcessMemory(targetProcess, (LPVOID)(out->allocationBase+out->randomHead), out->prepDllAlloc, sizeof(stubData.stub), NULL);
 
-  CONSOLE("Success");
   return SI_Success;
 }
 
@@ -156,14 +167,14 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
   out->randomHead = 0;
   if (in->randomHead)
   {
-    out->randomHead = randomNumber() % in->randomMax;
+    out->randomHead = cmn::randomNumber() % in->randomMax;
     out->randomHead += (out->randomHead % sizeof(int));  // round up to a number divisible by 4 for alignments sake
   }
 
   out->randomTail = 0;
   if (in->randomTail)
   {
-    out->randomTail = randomNumber() % in->randomMax;
+    out->randomTail = cmn::randomNumber() % in->randomMax;
     out->randomTail += (out->randomTail % sizeof(int));  // round up to a number divisible by 4 for alignments sake
   }
 
@@ -177,21 +188,21 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
 
   // randomize head
   for (UINT i = 0; i < out->randomHead; i++)
-    ((PUCHAR)out->prepDllAlloc)[i] = randomNumber() % 255;
+    ((PUCHAR)out->prepDllAlloc)[i] = cmn::randomNumber() % 255;
 
   // randomize tail
   for (UINT i = 0; i < out->randomTail; i++)
-    ((PUCHAR)out->prepDllAlloc)[out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + i] = randomNumber() % 255;
+    ((PUCHAR)out->prepDllAlloc)[out->randomHead + sizeof(StubParams) + peFile->getOptionalHead32()->SizeOfImage + i] = cmn::randomNumber() % 255;
 
   if (in->injectWithLocalDll)
   {
     /*
     TODO: Need to fix this!
     */
-    writeFile(in->localDllPath.c_str(), RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
+    cmn::writeFile(in->localDllPath.c_str(), RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
     CPELibrary peLib;
     peLib.OpenFile(in->localDllPath.c_str());
-    peLib.AddNewSection(".obj", imageSize + (randomNumber() % imageSize));
+    peLib.AddNewSection(".obj", imageSize + (cmn::randomNumber() % imageSize));
     peLib.SaveFile(in->localDllPath.c_str());
 
     static char dllName[256]{};
@@ -222,7 +233,7 @@ bool StealthInject::LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR im
   {
     moduleName = (char*)((DWORD)(out->prepDllBase) + importDescriptor->Name);
     CONSOLE("Name: " << moduleName);
-    to_lowercase(&moduleName);
+    cmn::to_lowercase(&moduleName);
     loadedDlls[moduleName] = false;
     importDescriptor++;
   }
@@ -238,7 +249,7 @@ bool StealthInject::LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR im
   if (Module32First(snapshot, &mod))
   {
     moduleName = mod.szModule;
-    to_lowercase(&moduleName);
+    cmn::to_lowercase(&moduleName);
 
     if (loadedDlls.find(moduleName) != loadedDlls.end())
       loadedDlls[moduleName] = true;
@@ -246,7 +257,7 @@ bool StealthInject::LoadImportedDlls(HANDLE process, PIMAGE_IMPORT_DESCRIPTOR im
     while (Module32Next(snapshot, &mod))
     {
       moduleName = mod.szModule;
-      to_lowercase(&moduleName);
+      cmn::to_lowercase(&moduleName);
 
       if (loadedDlls.find(moduleName) != loadedDlls.end())
         loadedDlls[moduleName] = true;
@@ -396,7 +407,7 @@ HANDLE StealthInject::CreateThread(HANDLE process, DWORD startRoutine, DWORD par
 
 DWORD StealthInject::LoadLibrary_Ex(HANDLE process, const char* moduleName, const char* modulePath)
 {
-  if (!getModuleHandleEx(GetProcessId(process), moduleName, false))
+  if (!cmn::getModuleHandleEx(GetProcessId(process), moduleName, false))
   {
     // load the dll into target process
     PVOID remoteAddr = VirtualAllocEx(process, NULL, strlen(modulePath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -411,12 +422,12 @@ DWORD StealthInject::LoadLibrary_Ex(HANDLE process, const char* moduleName, cons
     CloseHandle(thread);
     VirtualFreeEx(process, remoteAddr, 0, MEM_RELEASE);
   }
-  return getModuleHandleEx(GetProcessId(process), moduleName, false);
+  return cmn::getModuleHandleEx(GetProcessId(process), moduleName, false);
 }
 
 DWORD StealthInject::GetProcAddress_Ex(HANDLE process, const char* moduleName, const char* functionName)
 {
-  return getProcAddressEx(GetProcessId(process), moduleName, functionName);
+  return cmn::getProcAddressEx(GetProcessId(process), moduleName, functionName);
 }
 
 bool PEFile::isValidPEFile()
