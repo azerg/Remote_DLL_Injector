@@ -40,6 +40,7 @@ enum SIError {
   SI_CantOpenProcess,
   DI_InvalidFile,
   SI_FailedToAllocate,
+  SI_ErrorInitializingStub,
   SI_UnableToResolveIAT,
   SI_UnableToResolveRelocs,
   SI_FailedToWriteDll,

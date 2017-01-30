@@ -54,10 +54,11 @@ boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
   memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
 
-  stubData.pGetModuleHandle = cmn::getModuleHandleEx(targetPID, "GetModuleHandle");
-  stubData.pGetProcAddress = cmn::getModuleHandleEx(targetPID, "GetProcAddress");
+  stubData.pGetModuleHandle = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetModuleHandleW");
+  stubData.pGetProcAddress = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetProcAddress");
+  stubData.pNtQueryInformationProcess = cmn::getProcAddressEx(targetPID, "ntdll.dll", "NtQueryInformationProcess");
 
-  return boost::none;
+  return stubData;
 }
 
 SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
@@ -93,6 +94,11 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
 
   // copy stub
   const auto& stubData = FillStubParams(in, out, pid, peFile);
+  if (!stubData)
+  {
+    CONSOLE("Error: Failed filling stub params");
+    return SI_ErrorInitializingStub;
+  }
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), stubData.get_ptr(), sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too

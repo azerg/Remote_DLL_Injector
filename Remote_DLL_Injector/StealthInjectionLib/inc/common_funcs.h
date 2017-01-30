@@ -65,7 +65,7 @@ namespace cmn
     return FALSE; //** If we make it here, error process not found
   }
 
-  int getModuleHandleEx(int processID, string name, bool caseSensitive = false) noexcept
+  uint32_t getModuleHandleEx(int processID, string name, bool caseSensitive = false) noexcept
   {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, processID);
     if (snapshot == INVALID_HANDLE_VALUE)
@@ -84,7 +84,7 @@ namespace cmn
         cmn::to_lowercase(&moduleName);
 
       if (moduleName == name)
-        return (int)mod.modBaseAddr;
+        return (uint32_t)mod.modBaseAddr;
 
       while (Module32Next(snapshot, &mod))
       {
@@ -93,7 +93,7 @@ namespace cmn
           cmn::to_lowercase(&moduleName);
 
         if (moduleName == name)
-          return (int)mod.modBaseAddr;
+          return (uint32_t)mod.modBaseAddr;
       }
     }
 
@@ -101,7 +101,7 @@ namespace cmn
     return NULL;
   }
 
-  int getProcAddressEx(int processID, const char* moduleName, const char* funcName)
+  uint32_t getProcAddressEx(int processID, const char* moduleName, const char* funcName)
   {
     auto mod = LoadLibrary(moduleName);
     if (!mod)
@@ -110,8 +110,9 @@ namespace cmn
     }
     DWORD offsetInCurrentProcess = (DWORD)GetProcAddress(mod, funcName) - (DWORD)mod;
     if (int modInTarget = cmn::getModuleHandleEx(processID, moduleName, false))
-      return modInTarget + offsetInCurrentProcess;
-
+    {
+      return (modInTarget + offsetInCurrentProcess);
+    }
     // module not loaded
     return NULL;
   }

@@ -9,5 +9,6 @@ struct StubParams
   DllMainProc entryPoint;
   ULONG_PTR pGetModuleHandle;
   ULONG_PTR pGetProcAddress;
+  ULONG_PTR pNtQueryInformationProcess;
   char extraData[0x1000];
 };
