@@ -56,6 +56,7 @@ boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut
 
   stubData.pGetModuleHandle = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetModuleHandleW");
   stubData.pGetProcAddress = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetProcAddress");
+  stubData.pVirtualProtect = cmn::getProcAddressEx(targetPID, "kernel32.dll", "VirtualProtect");
   stubData.pZwQueryInformationProcess = cmn::getProcAddressEx(targetPID, "ntdll.dll", "ZwQueryInformationProcess");
 
   return stubData;

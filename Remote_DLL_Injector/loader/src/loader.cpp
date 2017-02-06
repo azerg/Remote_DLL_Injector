@@ -4,6 +4,10 @@
 #include "loader.h"
 #include "stub_data.h"
 
+void StartOriginalPE(PStubParams params);
+
+///---------------------------------------------------------------------------------
+
 DWORD WINAPI StubEP(PStubParams params)
 {
   __asm
@@ -13,20 +17,25 @@ DWORD WINAPI StubEP(PStubParams params)
   }
 
 
-  const BYTE TrampLen = 0x20;
+  const BYTE TrampLen = 0x0F;
 
-  /*
   // get addresses ( rebase func addresses )
   DWORD dwNewProcAddr = (DWORD)&NewZwQInfoProcess;
   DWORD dwTampProcAddr = (DWORD)&TrampZwQInfoProcess;
 
-  // TODO: replace with MACRO
   dwNewProcAddr -= 0x401000;
   dwTampProcAddr -= 0x401000;
-  dwNewProcAddr += reinterpret_cast<DWORD>( pStubData ) + sizeof(STUB_DATA);
-  dwTampProcAddr += reinterpret_cast<DWORD>( pStubData ) + sizeof(STUB_DATA);
-  pStubData->pZwQueryInformationProcess = dwTampProcAddr;
-  */
+  dwNewProcAddr += reinterpret_cast<DWORD>(params) + sizeof(StubParams);
+  dwTampProcAddr += reinterpret_cast<DWORD>(params) + sizeof(StubParams);
+  auto pOriginalApiAddr = params->pZwQueryInformationProcess;
+  params->pZwQueryInformationProcess = dwTampProcAddr;
+
+  InterceptAPI(
+    params,
+    pOriginalApiAddr,
+    dwNewProcAddr,
+    dwTampProcAddr,
+    TrampLen);
 
   StartOriginalPE(params);
   
@@ -37,6 +46,11 @@ void StartOriginalPE(PStubParams params)
 {
   params->entryPoint(params->dllBase, DLL_PROCESS_ATTACH, params->extraData);
 }
+
+///---------------------------------------------------------------------------------
+
+#pragma optimize( "", off )
+
 
 NTSTATUS WINAPI NewZwQInfoProcess(
   __in       HANDLE ProcessHandle,
@@ -71,4 +85,78 @@ NTSTATUS WINAPI NewZwQInfoProcess(
   }
 
   return Result;
+}
+
+
+BOOL InterceptAPI(PStubParams pStubData, ULONG_PTR dwAddressToIntercept, DWORD dwReplaced, DWORD dwTrampoline, BYTE offset)
+{
+  int i;
+  DWORD dwOldProtect;
+
+  BYTE *pbTargetCode = (BYTE *)dwAddressToIntercept;
+  BYTE *pbReplaced = (BYTE *)dwReplaced;
+  BYTE *pbTrampoline = (BYTE *)dwTrampoline;
+
+  for (i = 0; i < offset; i++)
+
+    *pbTrampoline++ = *pbTargetCode++;
+
+  pbTargetCode = (BYTE *)dwAddressToIntercept;
+
+  *pbTrampoline++ = 0xE9;        // jump rel32 
+
+  *((signed int *)(pbTrampoline)) = (pbTargetCode + offset) - (pbTrampoline + 4);
+
+  // Overwrite the first 5 bytes of the target function 
+
+  reinterpret_cast<PVirtualProtect>(pStubData->pVirtualProtect)((void *)dwAddressToIntercept, 5, PAGE_WRITECOPY, &dwOldProtect);
+
+  *pbTargetCode++ = 0xE9;        // jump rel32 
+
+  *((signed int *)(pbTargetCode)) = pbReplaced - (pbTargetCode + 4);
+
+  reinterpret_cast<PVirtualProtect>(pStubData->pVirtualProtect)((void *)dwAddressToIntercept, 5, PAGE_EXECUTE, &dwOldProtect);
+
+  return (TRUE);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Dummy Tramplines
+
+
+bool
+WINAPI
+TrampZwQInfoProcess(
+  __in       HANDLE ProcessHandle,
+  __in       DWORD ProcessInformationClass,
+  __out      PDWORD ProcessInformation,
+  __in       ULONG ProcessInformationLength,
+  __out_opt  PULONG ReturnLength
+)
+{
+  __asm {
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+  }
 }

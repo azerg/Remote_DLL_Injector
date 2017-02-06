@@ -9,6 +9,9 @@ typedef struct StubParams
   DllMainProc entryPoint;
   ULONG_PTR pGetModuleHandle;
   ULONG_PTR pGetProcAddress;
-  ULONG_PTR pZwQueryInformationProcess;
+  ULONG_PTR pVirtualProtect;
   char extraData[0x1000];
+
+  // runtime data
+  ULONG_PTR pZwQueryInformationProcess;
 }StubParams, *PStubParams;
