@@ -10,7 +10,7 @@ add_executable(${LOADER_X86_PROJECT_NAME} ${MainProjSrc} ${MainProjInc})
 
 set_target_properties(${LOADER_X86_PROJECT_NAME} PROPERTIES FOLDER Loaders)
 set_target_properties(${LOADER_X86_PROJECT_NAME} PROPERTIES LINK_FLAGS
-"/ENTRY:StubEP /DYNAMICBASE:NO /NXCOMPAT:NO /NODEFAULTLIB /SAFESEH:NO /INCREMENTAL:NO")
+"/ENTRY:StubEP /DYNAMICBASE:NO /NXCOMPAT:NO /NODEFAULTLIB /SAFESEH:NO /INCREMENTAL:NO /MAP")
 # enable all optimizations + remove all debug stuff ( just dont know how to switch off Debug build for single prj in cmake )
 string(REPLACE "/D_DEBUG" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 string(REPLACE "/MDd" "/MT" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})  # no additional libs
