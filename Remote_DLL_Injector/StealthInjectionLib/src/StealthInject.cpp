@@ -6,6 +6,11 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <map>
 #include <limits>
@@ -13,7 +18,15 @@
 #include <Shlwapi.h>
 using namespace std;
 
-#define HEADER_SIZE 0x1000
+struct LoaderX86Info
+{
+  std::string stubName = "loader_x86.stub";
+  std::string mapFileName = "loader_x86.map";
+  std::string loader_ep_function_name = "StubEP"; // entry point
+  uint16_t headerSize = 0x1000;
+};
+
+static LoaderX86Info loader_x86_info;
 
 LPVOID GetStubCodePtr(const std::string& stubName) noexcept
 {
@@ -42,6 +55,74 @@ LPVOID GetStubCodePtr(const std::string& stubName) noexcept
   return reinterpret_cast<LPVOID>(loaderData.data());
 }
 
+struct MapFileLine
+{
+  uint16_t section;
+  unsigned long offset;
+  std::string mangledName;
+  uint64_t functionRVA;
+  std::string unkStr0;
+  std::string objFileName;
+};
+
+MapFileLine LineToMapFileLine(std::string line)
+{
+  std::vector<std::string> lines;
+  boost::split(lines, line, boost::is_any_of(" :\t"));
+
+  if (lines.empty())
+  {
+    throw std::runtime_error("error parsing string");
+  }
+
+  auto end = std::remove_if(lines.begin(), lines.end(), [](const auto& ln) {
+    return ln.empty();
+  });
+  lines.erase(end, lines.end());
+
+  return{
+    boost::lexical_cast<decltype(MapFileLine::section)>(lines[0]),
+    std::stoul(lines[1], nullptr, 16),
+    lines[2],
+    boost::lexical_cast<decltype(MapFileLine::functionRVA)>(lines[3]),
+    lines[4],
+    lines[5]
+  };
+}
+
+auto GetFunctionOffsetFromMapFile(const std::string& mapFileName, const std::string& functionName)
+{
+  decltype(MapFileLine::offset) offset{};
+
+  // load loader data
+  static std::vector<char> mapFileData;
+
+  // todo(azerg): add ability to use alternative loader's storage path, instead of current dir
+  boost::filesystem::path loaderFullPath{ boost::filesystem::current_path() };
+  loaderFullPath /= mapFileName;
+
+  if (!boost::filesystem::exists(loaderFullPath))
+    throw std::runtime_error("no map file found");
+
+  boost::iostreams::stream<boost::iostreams::file_source> file(loaderFullPath.string().c_str());
+
+  std::string mangledFunctionName = "?" + functionName + "@@";
+
+  std::string line;
+  while (std::getline(file, line))
+  {
+    if (line.find(mangledFunctionName) != std::string::npos)
+    {
+      // sample line here:  0001:00000150       ?StartOriginalPE@@YAXPAUStubParams@@@Z 00401150 f   loader.obj
+
+      auto mapFileLine = LineToMapFileLine(line);
+      return mapFileLine.offset;
+    }
+  }
+
+  return offset;
+}
+
 boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut* out, int targetPID, PEFile& dllToInjectFile)
 {
   StubParams stubData{};
@@ -52,7 +133,7 @@ boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut
   stubData.dllBase = out->dllBase;
   stubData.entryPoint = (DllMainProc)((ULONG_PTR)out->dllBase + dllToInjectFile.getNtHeaders32()->OptionalHeader.AddressOfEntryPoint);
   out->dllEntryPoint = (DWORD)stubData.entryPoint;
-  memcpy(stubData.stub, GetStubCodePtr({"loader_x86.stub"}), sizeof(stubData.stub));
+  memcpy(stubData.stub, GetStubCodePtr({ loader_x86_info.stubName }), sizeof(stubData.stub));
 
   stubData.pGetModuleHandle = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetModuleHandleW");
   stubData.pGetProcAddress = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetProcAddress");
@@ -103,7 +184,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), stubData.get_ptr(), sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too
-  memcpy(out->prepDllBase, in->dllToInject.data(), HEADER_SIZE);
+  memcpy(out->prepDllBase, in->dllToInject.data(), loader_x86_info.headerSize);
 
   // copy sections
   char sectionName[10]{};
@@ -130,7 +211,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
   }
 
   if (in->removePEHeader)
-    memset(out->prepDllBase, 0, HEADER_SIZE);
+    memset(out->prepDllBase, 0, loader_x86_info.headerSize);
 
   if (in->removeExtraSections)
   {
@@ -154,9 +235,11 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
     return SI_FailedToWriteDll;
   }
 
+  auto stubEPOffset = GetFunctionOffsetFromMapFile(loader_x86_info.mapFileName, loader_x86_info.loader_ep_function_name);
+
   // create the stub thread, stub is located at allocationBase+randomHead, this is the start of StubParams, and the first
   // param is the stub itself!
-  auto pRemoteAddr = out->allocationBase + out->randomHead;
+  auto pRemoteAddr = out->allocationBase + out->randomHead + stubEPOffset;
   if (!CreateThread(targetProcess, pRemoteAddr, out->allocationBase + out->randomHead))
   {
     CONSOLE("Error: FailedToCreateThread in target process");
