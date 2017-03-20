@@ -12,6 +12,10 @@ typedef struct StubParams
   ULONG_PTR pVirtualProtect;
   char extraData[0x1000];
 
+  // internal Loader Function addressed
+  ULONG_PTR NewZwQInfoProcess;
+  ULONG_PTR TrampZwQInfoProcess;
+
   // runtime data
   ULONG_PTR pZwQueryInformationProcess;
 }StubParams, *PStubParams;

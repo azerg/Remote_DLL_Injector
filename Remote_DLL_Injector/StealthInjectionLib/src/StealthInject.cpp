@@ -23,6 +23,8 @@ struct LoaderX86Info
   std::string stubName = "loader_x86.stub";
   std::string mapFileName = "loader_x86.map";
   std::string loader_ep_function_name = "StubEP"; // entry point
+  std::string tramp_zw_qinfo_process_function_name = "TrampZwQInfoProcess"; // entry point
+  std::string new_zw_qinfo_process_function_name = "NewZwQInfoProcess"; // entry point
   uint16_t headerSize = 0x1000;
 };
 
@@ -139,6 +141,9 @@ boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut
   stubData.pGetProcAddress = cmn::getProcAddressEx(targetPID, "kernel32.dll", "GetProcAddress");
   stubData.pVirtualProtect = cmn::getProcAddressEx(targetPID, "kernel32.dll", "VirtualProtect");
   stubData.pZwQueryInformationProcess = cmn::getProcAddressEx(targetPID, "ntdll.dll", "ZwQueryInformationProcess");
+
+  stubData.TrampZwQInfoProcess = GetFunctionOffsetFromMapFile(loader_x86_info.mapFileName, loader_x86_info.tramp_zw_qinfo_process_function_name);
+  stubData.NewZwQInfoProcess = GetFunctionOffsetFromMapFile(loader_x86_info.mapFileName, loader_x86_info.new_zw_qinfo_process_function_name);
 
   return stubData;
 }

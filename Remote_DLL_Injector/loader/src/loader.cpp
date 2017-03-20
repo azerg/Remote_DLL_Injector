@@ -17,16 +17,11 @@ DWORD WINAPI StubEP(PStubParams params)
   }
 
 
-  const BYTE TrampLen = 0x0F;
+  const BYTE TrampLen = 0x16;//0x0F;
 
   // get addresses ( rebase func addresses )
-  DWORD dwNewProcAddr = (DWORD)&NewZwQInfoProcess;
-  DWORD dwTampProcAddr = (DWORD)&TrampZwQInfoProcess;
-
-  dwNewProcAddr -= 0x401000;
-  dwTampProcAddr -= 0x401000;
-  dwNewProcAddr += reinterpret_cast<DWORD>(params) + sizeof(StubParams);
-  dwTampProcAddr += reinterpret_cast<DWORD>(params) + sizeof(StubParams);
+  DWORD dwNewProcAddr = reinterpret_cast<DWORD>(params) + params->NewZwQInfoProcess;
+  DWORD dwTampProcAddr = reinterpret_cast<DWORD>(params) + params->TrampZwQInfoProcess;
   auto pOriginalApiAddr = params->pZwQueryInformationProcess;
   params->pZwQueryInformationProcess = dwTampProcAddr;
 
