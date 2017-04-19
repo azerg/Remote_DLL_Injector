@@ -24,14 +24,16 @@ DWORD WINAPI StubEP(PStubParams params)
 {
   const BYTE TrampLen = 0x16;//0x0F;
 
-                             // get addresses ( rebase func addresses )
+  // get addresses ( rebase func addresses )
   DWORD dwNewProcAddr = reinterpret_cast<DWORD>(params) + params->NewZwQInfoProcess;
   DWORD dwTampProcAddr = reinterpret_cast<DWORD>(params) + params->TrampZwQInfoProcess;
   auto pOriginalApiAddr = params->pZwQueryInformationProcess;
   params->pZwQueryInformationProcess = dwTampProcAddr;
 
   DWORD dwOldProtect;
-  VirtualProtect((LPVOID)dwTampProcAddr, 0x10000, PAGE_EXECUTE_READWRITE, &dwOldProtect);
+  auto tmpVal = dwTampProcAddr & 0x0FFF;
+  tmpVal;
+  VirtualProtect((LPVOID)(dwTampProcAddr & 0xFFFFF000), 0x10000, PAGE_EXECUTE_READWRITE, &dwOldProtect);
 
   InterceptAPI(
     params,
