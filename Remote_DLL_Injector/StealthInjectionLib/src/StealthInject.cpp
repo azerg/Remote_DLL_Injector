@@ -4,14 +4,10 @@
 #include "pelib.h"
 #include "RESOURCE_LocalEmptyDll.h"
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/iostreams/device/file.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
+#include <ranges>
+#include <string_view>
+#include <cassert>
+#include <filesystem>
 #include <map>
 #include <limits>
 #include <tlhelp32.h>
@@ -36,10 +32,10 @@ LPVOID GetStubCodePtr(const std::string& stubName) noexcept
   static std::vector<uint8_t> loaderData;
 
   // todo(azerg): add ability to use alternative loader's storage path, instead of current dir
-  boost::filesystem::path loaderFullPath{boost::filesystem::current_path()};
+  std::filesystem::path loaderFullPath{std::filesystem::current_path()};
   loaderFullPath /= stubName;
 
-  boost::filesystem::ifstream loaderFile;
+  std::ifstream loaderFile;
   loaderFile.open(loaderFullPath, std::ios::in || std::ifstream::binary);
 
   auto pbuf = loaderFile.rdbuf();
@@ -67,10 +63,36 @@ struct MapFileLine
   std::string objFileName;
 };
 
+struct StringTokenizer {
+  std::string_view sv;
+  std::string_view delims;
+  operator bool() const { return !sv.empty(); }
+  std::string_view operator()() {
+    auto r = sv;
+    const auto it = sv.find_first_of(delims);
+    if (it == std::string_view::npos) {
+      sv = {};
+    }
+    else {
+      r.remove_suffix(r.size() - it);
+      sv.remove_prefix(it + 1);
+    }
+    return r;
+  }
+};
+
 MapFileLine LineToMapFileLine(std::string line)
 {
-  std::vector<std::string> lines;
-  boost::split(lines, line, boost::is_any_of(" :\t"));
+  assert(false);
+  std::vector<std::string_view> lines;
+  //boost::split(lines, line, boost::is_any_of(" :\t"));
+  std::vector<char> ch;
+
+  StringTokenizer tok(line, " :\t");
+  while (tok) {
+    lines.push_back(tok());
+  }
+
 
   if (lines.empty())
   {
@@ -83,12 +105,12 @@ MapFileLine LineToMapFileLine(std::string line)
   lines.erase(end, lines.end());
 
   return{
-    boost::lexical_cast<decltype(MapFileLine::section)>(lines[0]),
-    std::stoul(lines[1], nullptr, 16),
-    lines[2],
-    boost::lexical_cast<decltype(MapFileLine::functionRVA)>(lines[3]),
-    lines[4],
-    lines[5]
+    (uint16_t)std::stoul(lines[0].data()),
+    std::stoul(lines[1].data(), nullptr, 16),
+    lines[2].data(),
+    std::stoul(lines[3].data()),
+    lines[4].data(),
+    lines[5].data()
   };
 }
 
@@ -100,13 +122,13 @@ auto GetFunctionOffsetFromMapFile(const std::string& mapFileName, const std::str
   static std::vector<char> mapFileData;
 
   // todo(azerg): add ability to use alternative loader's storage path, instead of current dir
-  boost::filesystem::path loaderFullPath{ boost::filesystem::current_path() };
+  std::filesystem::path loaderFullPath{ std::filesystem::current_path() };
   loaderFullPath /= mapFileName;
 
-  if (!boost::filesystem::exists(loaderFullPath))
+  if (!std::filesystem::exists(loaderFullPath))
     throw std::runtime_error("no map file found");
 
-  boost::iostreams::stream<boost::iostreams::file_source> file(loaderFullPath.string().c_str());
+  std::ifstream file(loaderFullPath.string().c_str());
 
   std::string mangledFunctionName = "?" + functionName + "@@";
 
@@ -116,7 +138,6 @@ auto GetFunctionOffsetFromMapFile(const std::string& mapFileName, const std::str
     if (line.find(mangledFunctionName) != std::string::npos)
     {
       // sample line here:  0001:00000150       ?StartOriginalPE@@YAXPAUStubParams@@@Z 00401150 f   loader.obj
-
       auto mapFileLine = LineToMapFileLine(line);
       return mapFileLine.offset;
     }
@@ -125,7 +146,7 @@ auto GetFunctionOffsetFromMapFile(const std::string& mapFileName, const std::str
   return offset;
 }
 
-boost::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut* out, int targetPID, PEFile& dllToInjectFile)
+std::optional<StubParams> FillStubParams(StealthParamsIn* in, StealthParamsOut* out, int targetPID, PEFile& dllToInjectFile)
 {
   StubParams stubData{};
   assert(in->params.size() <= sizeof(stubData.extraData));
@@ -186,7 +207,7 @@ SIError StealthInject::Inject(StealthParamsIn* in, StealthParamsOut* out)
     CONSOLE("Error: Failed filling stub params");
     return SI_ErrorInitializingStub;
   }
-  memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), stubData.get_ptr(), sizeof(StubParams));
+  memcpy((LPVOID)((DWORD)out->prepDllAlloc + out->randomHead), &stubData.value(), sizeof(StubParams));
 
   // copy pe header, real header size is in IMAGE_FIRST_SECTION (peFile.getNtHeaders32())->PointerToRawData), but 0x1000 works well too
   memcpy(out->prepDllBase, in->dllToInject.data(), loader_x86_info.headerSize);
@@ -297,7 +318,7 @@ bool StealthInject::AllocateDll(HANDLE process, StealthParamsIn* in, StealthPara
     cmn::writeFile(in->localDllPath.c_str(), RESOURCE_LocalEmptyDll, sizeof(RESOURCE_LocalEmptyDll));
     CPELibrary peLib;
     peLib.OpenFile(in->localDllPath.c_str());
-    peLib.AddNewSection(".obj", imageSize + (cmn::randomNumber() % imageSize));
+    peLib.AddNewSection((char*)".obj", imageSize + (cmn::randomNumber() % imageSize));
     peLib.SaveFile(in->localDllPath.c_str());
 
     static char dllName[256]{};

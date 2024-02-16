@@ -1,22 +1,15 @@
-file(GLOB InjectorUIInc "*.h")
-file(GLOB InjectorUISrc "*.cpp")
+file(GLOB InjectorUIInc "inc/*.h")
+file(GLOB InjectorUISrc "src/*.cpp")
 
-find_package(Boost 1.36.0 REQUIRED filesystem system)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(tomlplusplus REQUIRED IMPORTED_TARGET tomlplusplus)
 
-# 1: Use MFC in a Static Library
-# 2: For the shared MFC library
-set(CMAKE_MFC_FLAG 2)
-
-#string(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-#string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-
-include_directories(${BOOST_ROOT} "${CMAKE_HOME_DIRECTORY}/StealthInjectionLib/inc")
+include_directories("inc" "${CMAKE_HOME_DIRECTORY}/StealthInjectionLib/inc")
 
 add_executable(InjectorUI WIN32 ${InjectorUISrc} ${InjectorUIInc} "InjectorUI.rc")
 
-if (MSVC)
-   set_target_properties(InjectorUI PROPERTIES COMPILE_FLAGS "/Yustdafx.h")
-   set_source_files_properties(stdafx.cpp PROPERTIES COMPILE_FLAGS "/Ycstdafx.h")
-endif(MSVC)
+target_precompile_headers(InjectorUI PRIVATE inc/stdafx.h)
+set_property(TARGET InjectorUI PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-target_link_libraries(InjectorUI StealthInjectionLib ${Boost_LIBRARIES})
+target_link_libraries(InjectorUI StealthInjectionLib PkgConfig::tomlplusplus)

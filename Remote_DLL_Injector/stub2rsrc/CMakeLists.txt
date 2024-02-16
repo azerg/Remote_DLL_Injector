@@ -5,3 +5,6 @@ include_directories("inc" ${common_inc})
 
 add_definitions(-DUNICODE -D_UNICODE)
 add_executable(stub2rsrc ${MainProjSrc} ${MainProjInc})
+
+set_property(TARGET stub2rsrc PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

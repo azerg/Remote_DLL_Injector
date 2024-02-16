@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <tchar.h>
 
-#include "stub_data.h"
+#include "../loader/inc/stub_data.h"
 #include "../loader/inc/loader.h"
 
 

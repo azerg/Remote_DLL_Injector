@@ -1,0 +1,9 @@
+{
+  "name": "injector",
+  "version-string": "2.0.0",
+  "dependencies": [
+	"cli11",
+	"tomlplusplus",
+	"pkgconf"
+  ]
+}

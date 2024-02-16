@@ -7,13 +7,13 @@
 #include <memory>
 #include "HListBox.h"
 #include "Settings.h"
-#include <boost/optional.hpp>
+#include <optional>
 
 class InjectionMngr
 {
 public:
   InjectionMngr(CHListBox& lbLogOutput);
-  boost::optional<int64_t> DoInject(const char* targetProcessName, const char* dllToInjectPath, InjectionOptions options) const;
+  std::optional<int64_t> DoInject(const char* targetProcessName, const char* dllToInjectPath, InjectionOptions options) const;
 
 private:
   InjectionMngr(const InjectionMngr&) = delete;

@@ -9,60 +9,20 @@
 #include <iterator>
 #include <stdio.h>
 #include <tchar.h>
-#include <boost/program_options.hpp>
+#include <CLI/CLI.hpp>
 
-namespace po = boost::program_options;
+
+CLI::App app("remInject TestConsole");
 
 
 struct CmdOptions
 {
   std::string targetProcessName;
+  uint32_t pid;
   std::string dllToInjectPath;
   bool injectWithLocalDLL; /*true*/
   std::string localDLLPath;
 };
-
-template <class Type>
-void GetValFromCmd(const po::variables_map& vm, const char* fieldName, Type& outVar)
-{
-  outVar = vm[fieldName].as<Type>();
-}
-
-CmdOptions ParseCmd(int argc, _TCHAR* argv[])
-{
-  CmdOptions result;
-
-  // Declare the supported options.
-  po::options_description desc("Allowed options");
-  desc.add_options()
-  ("help,h", "produce help message")
-  ("target_process_name", po::value<std::string>()->default_value(""), "Target process name (e.g. \"target.exe\")")
-  ("source_dll_path", po::value<std::string>()->default_value(""), "Full path to dll to inject")
-  ("with_local_dll", po::value<bool>()->default_value(false), "Inject with local dll flag (default false)")
-  ("local_dll_path", po::value<std::string>()->default_value(""), "Full path to the local dll that will be created during process of injection")
-  ;
-
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
-
-  if (vm.count("help"))
-  {
-    std::cout << desc << "\n" << "Sample params str:\n" <<
-      "--target_process_name=\"TargetApp.exe\" "
-      "--source_dll_path=\"D:\\Work\\Remote_DLL_Injector\\bin\\Debug\\SampleDll.dll\" "
-      "--with_local_dll=yes "
-      "--local_dll_path=\"D:\\Work\\Remote_DLL_Injector\\bin\\Debug\\dummy_local.dll\"";
-    return CmdOptions{};
-  }
-
-  GetValFromCmd(vm, "target_process_name", result.targetProcessName);
-  GetValFromCmd(vm, "source_dll_path", result.dllToInjectPath);
-  GetValFromCmd(vm, "with_local_dll", result.injectWithLocalDLL);
-  GetValFromCmd(vm, "local_dll_path", result.localDLLPath);
-
-  return result;
-}
 
 std::vector<uint8_t> ReadFileContents(std::string filePath)
 {
@@ -74,10 +34,7 @@ std::vector<uint8_t> ReadFileContents(std::string filePath)
   return fileContents;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
-{
-  auto cmdOptions = ParseCmd(argc, argv);
-
+int doJob(const CmdOptions& cmdOptions) {
   if (cmdOptions.dllToInjectPath.empty())
   {
     std::cout << "Type -h for help" << std::endl;
@@ -91,12 +48,12 @@ int _tmain(int argc, _TCHAR* argv[])
   memset(&out, 0, sizeof(out));
   in.dllToInject = ReadFileContents(cmdOptions.dllToInjectPath.c_str());
   in.process = cmdOptions.targetProcessName;
-  in.params = {1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1}; // sample params arr :D
+  in.params = { 1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1 }; // sample params arr :D
   in.removeExtraSections = true;
   in.removePEHeader = true;
   in.randomHead = true;
   in.randomTail = true;
-  in.randomMax = 1024*5;
+  in.randomMax = 1024 * 5;
   in.injectWithLocalDll = cmdOptions.injectWithLocalDLL;
   in.localDllPath = cmdOptions.localDLLPath;
 
@@ -104,7 +61,24 @@ int _tmain(int argc, _TCHAR* argv[])
   SIError err = inj.Inject(&in, &out);
 
   std::cout << "SIError: " << err << std::endl;
-
   return 0;
 }
 
+int _tmain(int argc, _TCHAR* argv[])
+{
+  CmdOptions cmdOptions;
+
+  app.add_option("target_process_name,--target_process_name,-target_process_name,--t,-t", cmdOptions.targetProcessName, "Target process name (e.g. \"target.exe\")");
+
+  app.add_option("pid,--pid,-pid", cmdOptions.pid, "Target process name (e.g. \"target.exe\")");
+
+  app.add_option("source_dll_path,--source_dll_path,-source_dll_path,--s,-s", cmdOptions.dllToInjectPath, "Full path to dll to inject");
+
+  app.add_option("with_local_dll,--with_local_dll,-with_local_dll", cmdOptions.injectWithLocalDLL, "Inject with local dll flag (default false)");
+
+  app.add_option("local_dll_path,--local_dll_path,-local_dll_path", cmdOptions.localDLLPath, "Full path to the local dll that will be created during process of injection ( default empty ). Use with --with_local_dll_opt flag");
+
+  CLI11_PARSE(app, argc, argv);
+
+  return doJob(cmdOptions);
+}

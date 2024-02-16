@@ -10,7 +10,7 @@ struct InjectionOptions
   bool randomHead;
   bool randomTail;
   bool injectWithLocalDll;
-  uint32_t randomMax; // = 1024 * 5;
+  uint32_t randomMax = 1024 * 5;
 };
 
 // Options used to share between "Settings" dlg & main window

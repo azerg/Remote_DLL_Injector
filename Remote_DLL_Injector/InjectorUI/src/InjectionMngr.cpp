@@ -3,8 +3,8 @@
 #include "StealthInject.h"
 #include <Windows.h>
 #include <vector>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <fstream>
+#include <filesystem>
 
 std::vector<uint8_t> ReadFileContents(std::string filePath)
 {
@@ -59,7 +59,7 @@ InjectionMngr::InjectionMngr(CHListBox& lbLogOutput):
   lbLogOutput_(lbLogOutput)
 {}
 
-boost::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
+std::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, const char * dllToInjectPath, InjectionOptions options) const
 {
   lbLogOutput_.ResetContent();
 
@@ -77,12 +77,12 @@ boost::optional<int64_t> InjectionMngr::DoInject(const char* targetProcessName, 
     in.randomTail = options.randomTail;
     in.randomMax = options.randomMax;
     in.injectWithLocalDll = options.injectWithLocalDll;
-    in.localDllPath = (boost::filesystem::current_path() /= "dummyLocal.dll").generic_string();
+    in.localDllPath = (std::filesystem::current_path() /= "dummyLocal.dll").generic_string();
 
     StealthInject inj(logBuff_.get());
     SIError err = inj.Inject(&in, &out);
 
-    return err == SI_Success ? boost::optional<int64_t>() : static_cast<uint64_t>(err);
+    return err == SI_Success ? std::optional<int64_t>() : static_cast<uint64_t>(err);
   }
   catch (const std::exception& ex)
   {

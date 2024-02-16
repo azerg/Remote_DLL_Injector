@@ -31,7 +31,7 @@ namespace PE
     DWORD AlignUp(DWORD val, DWORD align) const;
 
   protected:
-        PIMAGE_SECTION_HEADER AddSection( const char* szName, ULONG cbSizeOfRawData, ULONG Characteristics );
+    PIMAGE_SECTION_HEADER AddSection( const char* szName, ULONG cbSizeOfRawData, ULONG Characteristics );
     
     ULONG_PTR m_pFileBuff;
   };

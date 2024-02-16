@@ -7,7 +7,6 @@
 #include "InjectorUIDlg.h"
 #include "DlgSettings.h"
 #include "afxdialogex.h"
-#include <boost/format.hpp>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -278,7 +277,7 @@ void CInjectorUIDlg::OnBnClickedBtnDoInject()
   }
   else
   {
-    auto msg = boost::str(boost::format("Error! Code: %1%") % reslt.get());
+    auto msg = "Error! Code: " + std::to_string(*reslt);
     m_lbLogOutput.AddString(msg.c_str());
   }
 }
