@@ -9,6 +9,7 @@
 #include <cassert>
 #include <filesystem>
 #include <map>
+#include <regex>
 #include <limits>
 #include <tlhelp32.h>
 #include <Shlwapi.h>
@@ -28,25 +29,19 @@ static LoaderX86Info loader_x86_info;
 
 LPVOID GetStubCodePtr(const std::string& stubName) noexcept
 {
-  // load loader data
-  static std::vector<uint8_t> loaderData;
-
   // todo(azerg): add ability to use alternative loader's storage path, instead of current dir
   std::filesystem::path loaderFullPath{std::filesystem::current_path()};
   loaderFullPath /= stubName;
+  if (!std::filesystem::exists(loaderFullPath))
+    return nullptr;
 
   std::ifstream loaderFile;
   loaderFile.open(loaderFullPath, std::ios::in || std::ifstream::binary);
 
-  auto pbuf = loaderFile.rdbuf();
-  // get file size
-  size_t size = static_cast<size_t>(pbuf->pubseekoff(0, loaderFile.end, loaderFile.in));
-  pbuf->pubseekpos(0, loaderFile.in);
-
-  loaderData.reserve(size);
-
-  // get file data
-  pbuf->sgetn(reinterpret_cast<char*>(loaderData.data()), size);
+  auto size = std::filesystem::file_size(loaderFullPath);
+  static std::vector<uint8_t> loaderData;
+  loaderData.resize(size);
+  loaderFile.read((char*)loaderData.data(), size);
 
   loaderFile.close();
 
@@ -63,35 +58,11 @@ struct MapFileLine
   std::string objFileName;
 };
 
-struct StringTokenizer {
-  std::string_view sv;
-  std::string_view delims;
-  operator bool() const { return !sv.empty(); }
-  std::string_view operator()() {
-    auto r = sv;
-    const auto it = sv.find_first_of(delims);
-    if (it == std::string_view::npos) {
-      sv = {};
-    }
-    else {
-      r.remove_suffix(r.size() - it);
-      sv.remove_prefix(it + 1);
-    }
-    return r;
-  }
-};
-
 MapFileLine LineToMapFileLine(std::string line)
 {
-  assert(false);
-  std::vector<std::string_view> lines;
-  //boost::split(lines, line, boost::is_any_of(" :\t"));
-  std::vector<char> ch;
-
-  StringTokenizer tok(line, " :\t");
-  while (tok) {
-    lines.push_back(tok());
-  }
+  std::regex re("[ \t:]");
+  std::sregex_token_iterator first{ line.begin(), line.end(), re, -1 }, last;
+  std::vector<std::string> lines{ first, last };
 
 
   if (lines.empty())

@@ -20,7 +20,7 @@ struct CmdOptions
   std::string targetProcessName;
   uint32_t pid;
   std::string dllToInjectPath;
-  bool injectWithLocalDLL; /*true*/
+  bool injectWithLocalDLL = false; /*true*/
   std::string localDLLPath;
 };
 
@@ -42,10 +42,8 @@ int doJob(const CmdOptions& cmdOptions) {
   }
 
   // inject
-  static StealthParamsIn in;
-  static StealthParamsOut out;
-  memset(&in, 0, sizeof(in));
-  memset(&out, 0, sizeof(out));
+  static StealthParamsIn in = {};
+  static StealthParamsOut out = {};
   in.dllToInject = ReadFileContents(cmdOptions.dllToInjectPath.c_str());
   in.process = cmdOptions.targetProcessName;
   in.params = { 1,2,3,4,5,6,7,8,9,0,9,8,7,6,5,4,3,2,1 }; // sample params arr :D
@@ -66,17 +64,17 @@ int doJob(const CmdOptions& cmdOptions) {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-  CmdOptions cmdOptions;
+  CmdOptions cmdOptions = {};
 
-  app.add_option("target_process_name,--target_process_name,-target_process_name,--t,-t", cmdOptions.targetProcessName, "Target process name (e.g. \"target.exe\")");
+  app.add_option("--target,-t", cmdOptions.targetProcessName, "Target process name (e.g. \"target.exe\")");
 
-  app.add_option("pid,--pid,-pid", cmdOptions.pid, "Target process name (e.g. \"target.exe\")");
+  app.add_option("--pid,-p", cmdOptions.pid, "Target process name (e.g. \"target.exe\")");
 
-  app.add_option("source_dll_path,--source_dll_path,-source_dll_path,--s,-s", cmdOptions.dllToInjectPath, "Full path to dll to inject");
+  app.add_option("source_dll_path,--source_dll_path,-s", cmdOptions.dllToInjectPath, "Full path to dll to inject")->required(true);;
 
-  app.add_option("with_local_dll,--with_local_dll,-with_local_dll", cmdOptions.injectWithLocalDLL, "Inject with local dll flag (default false)");
+  app.add_option("--with_local_dll,-w", cmdOptions.injectWithLocalDLL, "Inject with local dll flag (default false)")->required(false);;
 
-  app.add_option("local_dll_path,--local_dll_path,-local_dll_path", cmdOptions.localDLLPath, "Full path to the local dll that will be created during process of injection ( default empty ). Use with --with_local_dll_opt flag");
+  app.add_option("--local_dll_path", cmdOptions.localDLLPath, "Full path to the local dll that will be created during process of injection ( default empty ). Use with --with_local_dll_opt flag");
 
   CLI11_PARSE(app, argc, argv);
 

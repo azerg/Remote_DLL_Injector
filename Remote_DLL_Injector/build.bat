@@ -1,2 +1,2 @@
 REM rd /s /q build
-cmake . -B"build" -G"Visual Studio 17" -A Win32 -DCMAKE_TOOLCHAIN_FILE=E:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_OVERLAY_TRIPLETS=./vcpkg/triplets -DVCPKG_TARGET_TRIPLET=dummy_test_triplet
+cmake . -B"build" -G"Visual Studio 17" -A Win32 -DCMAKE_TOOLCHAIN_FILE=D:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_OVERLAY_TRIPLETS=./vcpkg/triplets -DVCPKG_TARGET_TRIPLET=dummy_test_triplet
