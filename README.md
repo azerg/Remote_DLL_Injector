@@ -1,7 +1,7 @@
 Remote Stealth DLL Injector
 ========
 
-C++ DLL Injector. Might bypass smth ( old codes from 2012 :D ).
+C++ DLL Injector ( old codes from 2012 :D ).
 
 ### todo:
 * injected dll might use c++ exceptions.
